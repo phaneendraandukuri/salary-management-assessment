@@ -4,5 +4,7 @@ CODEX_CONTEXT.md
 !.env.example
 node_modules/
 dist/
+coverage/
+*.tsbuildinfo
 reference/
 .vscode/
