@@ -4,3 +4,5 @@ CODEX_CONTEXT.md
 !.env.example
 node_modules/
 dist/
+reference/
+.vscode/

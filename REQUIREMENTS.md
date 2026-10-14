@@ -1,28 +1,26 @@
-# ACME Salary Management — Product Requirements (v1.0)
+# ACME Salary Management — Product Requirements
 
 ## Goal and user
-Help ACME's HR manager replace spreadsheet-based salary administration for 10,000 employees across multiple countries. The web application must make salary records easier to maintain and answer basic questions about organizational compensation.
+Enable ACME’s HR Manager to maintain salary records for 10,000 employees across multiple countries and answer basic organizational compensation questions through a web application.
 
-## In scope
-1. **Employee directory:** Search by name/email; filter by country, department and currency; sort and paginate. Display employee ID, name, department, role, country, currency and current annual base salary.
-2. **Salary management:** Add employees and update salaries. Validate required fields, unique employee IDs, supported currencies and positive salary amounts. Show a history of salary changes (old amount, new amount, timestamp).
-3. **Compensation insights:** Show headcount and annual base salary totals, averages, medians, minima and maxima, with country/department filters and breakdowns. **Group all monetary figures by currency.** Never combine different currencies in a single salary total or average; overall headcount can span currencies.
-4. **Access:** Basic authentication for a single HR demo user; synthetic data only.
-5. **Delivery:** Repeatable 10,000-employee seed script, local setup instructions, deployed functioning app and short video demo.
+## Functional scope
+- **Employee directory:** Search by name or email; filter by country, department, and currency; sort and paginate. Display employee ID, name, department, role, country, currency, and current annual base salary.
+- **Salary management:** Add employees and update salaries. Validate required fields, unique employee IDs, supported currencies, and positive salary amounts. Display salary-change history with old amount, new amount, and timestamp.
+- **Compensation insights:** Show headcount and annual base salary totals, averages, medians, minima, and maxima, with country/department filters and breakdowns. Group every monetary figure by currency; overall headcount may span currencies.
+- **Access:** Basic authentication for one HR demo user. Use synthetic employee data only.
 
 ## Decisions and assumptions
-- **Pay definition:** Current **annual base compensation**, explicitly accepted by Incubyte; excludes other compensation components.
-- **Currency strategy:** Retain each employee's salary in its original currency and report by currency rather than normalizing to one. This avoids exchange-rate/date assumptions and misleading mixed-currency aggregates, while sacrificing a single cross-country compensation total.
-- **Audit:** Change history captures edits made through this application; it is not an effective-dated payroll ledger.
-- **User:** One HR manager who can view and modify data; no employee-facing access.
+- **Compensation:** Salary means current annual base compensation; other compensation components are excluded.
+- **Currencies:** Store salaries in their original currency and report separately by currency. This avoids exchange-rate and date assumptions and misleading mixed-currency aggregates, but provides no single cross-country compensation total.
+- **History:** Record salary edits made through this application. History is not an effective-dated payroll ledger.
+- **User:** One HR Manager can view and modify records; employee-facing access is excluded.
 
-## Quality and acceptance criteria
-- The deployed frontend and backend support the primary workflows with 10,000 seeded records.
-- Search, sort, filter and paginate on the server; maintain usable performance at the target size.
-- Reject invalid inputs; persist valid salary updates with a matching history record.
-- Compensation calculations honor current filters and currency boundaries.
-- Follow **Red → Green → Refactor**; include deterministic tests for validation, salary changes, analytics and critical API behavior. Make small, meaningful, manually reviewed commits.
-- Document architecture, trade-offs, performance considerations, setup and actual AI assistance.
+## Acceptance criteria
+- The deployed frontend and backend support the primary workflows with 10,000 seeded employees.
+- Search, filtering, sorting, and pagination run on the server and remain usable at the target size.
+- Invalid inputs are rejected. Valid salary updates persist with a matching history record.
+- Compensation calculations reflect current filters and never combine unlike currencies.
+- Delivery includes a repeatable 10,000-employee seed script, local setup instructions, a functioning deployed application, and a short video demonstration.
 
-## Deliberately left out
-Bonuses, equity, benefits, taxes, payroll/payslips, live or historical FX conversion, Excel import/export, bulk raises, multi-role permissions, approval flows, employee self-service, advanced analytics and HR-system integrations. These need substantial additional domain rules, security or integration work. The seed script supplies demo data, not a general spreadsheet migration tool.
+## Deliberately excluded
+Bonuses, equity, benefits, taxes, payroll/payslips, live or historical currency conversion, Excel import/export, bulk raises, multi-role permissions, approval flows, employee self-service, advanced analytics, and HR-system integrations. These require additional domain rules, security, or integration work beyond the focused salary-management scope. The seed script supplies demo data; it is not a spreadsheet migration tool.
