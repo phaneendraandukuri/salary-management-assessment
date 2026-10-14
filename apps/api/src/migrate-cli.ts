@@ -9,7 +9,7 @@ if (!connectionString) {
 const pool = createPool(connectionString);
 try {
   await migrate(pool);
-  console.log('Migration 001_employees applied');
+  console.log('Migrations 001_employees and 002_salary_history applied');
 } catch {
   console.error('Migration failed; check the database connection and schema');
   process.exitCode = 1;

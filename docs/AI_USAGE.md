@@ -290,3 +290,40 @@ builds, and `git diff --check` passed. Vite transformed 18 modules. The first fi
 check found the new form test file still needed formatting; a second formatter pass resolved
 it and `format:check` passed. Candidate review remains pending; Codex has not staged, committed,
 pushed, deployed, or started another task.
+
+## Task 7A — salary history and transactional updates
+
+The candidate confirmed Task 6 review, commit, and push, then split Task 7 into persistence
+(7A) and HTTP contracts (7B). Codex implemented only 7A: migration 002, minimal ordered migration
+execution, exact salary update/history persistence, and unit/isolated integration tests. Currency
+stays unchanged; normalized no-ops return `salary_unchanged`. No new dependencies, HTTP routes,
+history retrieval helper, or frontend changes were added. The committed migration 001 is unchanged.
+
+| Behavior | Actual Red evidence | Green evidence |
+| --- | --- | --- |
+| History migration | Table lookup returned null | 53 integration tests passed |
+| Exact salary/history write | 2 failed: importable skeleton returned persistence_failed | 55 passed |
+| Unchanged/missing/overflow rejection | 6 failed: unchanged accepted; missing/overflow errors too generic | 69 passed |
+| Atomic rollback | Failed history insert left salary at 100.00 instead of 75000.50 | 70 passed |
+| History constraints | 15 invalid direct SQL writes succeeded | 87 passed |
+| Concurrent edits | 2 failed: stale old amount broke chain; identical edits created two histories | 89 passed |
+| Rollback failure | Unit promise leaked private rollback error | 175 API unit tests passed |
+
+Eight invalid-input integration cases passed immediately by reusing the salary validator.
+Foreign-key and migration-reapplication checks also passed immediately, as did two unit checks
+for connection/query failures. One additional large old-amount precision check is regression
+coverage. These are not claimed as new Red cycles. Concurrency used actual PostgreSQL lock
+observations before releasing a barrier, not a guessed scheduling order or sleep duration.
+Refinement applied Prettier and reviewed responsibility boundaries without adding abstractions.
+
+The sandbox-only readiness check reported no response; an approved check verified PostgreSQL
+was accepting connections before behavioral tests. Codex consulted official node-postgres
+transaction and PostgreSQL row-lock documentation. A compiled check in a fresh acme_test schema
+ran the migration CLI twice, performed an exact salary update, verified retained history, then
+closed its connections and dropped its schema. Development migration/data were not changed.
+Final validation by Codex: `npm test` passed 175 API tests (338 ms) and 28 frontend tests
+(5.15 s); the isolated PostgreSQL integration command passed 90 tests (1.71 s). Format checks,
+type checks, lint, both builds, and `git diff --check` passed. The frontend assets remained
+unchanged. A final metadata check found zero private test schemas and zero other acme_test
+connections. Task 7B and hosting/deployment work remain unstarted; candidate review is pending.
+Codex has not staged, committed, pushed, or deployed.

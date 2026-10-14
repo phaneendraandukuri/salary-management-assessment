@@ -137,7 +137,7 @@ describe('employee HTTP API with PostgreSQL', () => {
 });
 
 beforeEach(async () => {
-  await pool.query('TRUNCATE employees');
+  await pool.query('TRUNCATE salary_history, employees');
 });
 
 afterAll(async () => {

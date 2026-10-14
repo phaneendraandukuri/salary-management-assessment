@@ -104,3 +104,33 @@ and normalization rules are deliberately deferred rather than silently imposed.
   currently selected directory page using a functional state update. Creation feedback and
   directory state stay independent: a failed refresh does not undo or misreport a confirmed
   insert. Employee-ID ordering can place the new record on a different page.
+
+## Atomic salary persistence — Task 7A
+
+- Migration 002 adds history ID, employee foreign key, original currency, old/new NUMERIC amounts,
+  and a database-generated TIMESTAMPTZ. NOT NULL/CHECK constraints enforce supported currencies,
+  positive finite amounts with at most two fractional digits, and different old/new values.
+  An employee/timestamp/history-ID index supports the subsequent bounded history query.
+- The explicit migration runner lists 001 then 002, applying both in one transaction. No ledger,
+  ORM, or migration framework; reapplication creates missing objects without altering existing
+  definitions or records. Migration 001 is unchanged. SQL files must accompany the compiled API.
+- `updateSalary` acquires one pool client, begins a transaction, and reads the employee with
+  `SELECT ... FOR UPDATE`. All statements use that client. Under default READ COMMITTED isolation,
+  an overlapping edit waits and then sees the latest committed salary before validating.
+- Reuse the salary validator with the stored currency. Normalize both requested/stored amounts
+  for equality without numbers; this also handles valid stored amounts with fewer fractional
+  digits. Reject unchanged values as `salary_unchanged`; missing IDs become `employee_not_found`.
+  Update only salary, insert history, and commit. History timestamps use `clock_timestamp()` at
+  insertion rather than transaction-start time, which could precede a wait on another editor.
+- Roll back rejected edits and failed SQL; release the client in finally. Failed rollback discards
+  the client. Numeric overflow maps to `amount_not_storable`; other failures are sanitized.
+  A lost connection during COMMIT can leave the outcome unknown to the caller even though the
+  database keeps both writes atomic. No automatic retries or idempotency mechanism are added.
+- Integration concurrency tests hold an external row lock until PostgreSQL reports both edits
+  blocked. They assert the resulting chain without assuming a winner; identical edits create
+  one record and one unchanged error. The five-second timeout diagnoses a missing barrier;
+  polling delay is not a correctness assertion. New test cleanup uses finally blocks. The older
+  suite only gains the necessary two-table TRUNCATE; its cleanup-hardening follow-up is deferred.
+
+No salary HTTP endpoints, history retrieval helper, or frontend editor are part of Task 7A.
+The agreed `salary_unchanged` → HTTP 409 mapping belongs to Task 7B.

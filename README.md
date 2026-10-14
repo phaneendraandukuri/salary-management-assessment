@@ -7,8 +7,9 @@ retry, and pagination states. A separate form creates employees, confirms succes
 the current directory page. Failed submissions retain entered values; uncertain network failures
 ask you to check the directory before resubmitting. Employee-ID ordering means a new record may
 appear on another page.
-Salary updates/history, directory search/filter/sort, analytics, authentication, seeding, and deployment
-are not implemented yet.
+Transactional salary updates and history storage are implemented internally; their HTTP endpoints
+and UI remain pending. Directory search/filter/sort, analytics, authentication, seeding, and
+deployment are not implemented yet.
 
 ## Local setup
 
@@ -69,6 +70,7 @@ serves the UI build locally. Vite preview is a local check, not a production hos
 - `apps/api/src/employee.ts`, `create-employee.ts`: validation and one parameterized insert.
 - `apps/api/src/pagination.ts`, `list-employees.ts`: query validation and bounded retrieval.
 - `apps/api/migrations/001_employees.sql`: initial employee schema.
+- `apps/api/migrations/002_salary_history.sql`, `src/update-salary.ts`: history storage and atomic salary edits.
 - Root: npm workspaces, shared strict TypeScript settings, ESLint, and one dependency lockfile.
 - `docs/AI_USAGE.md`: actual AI assistance and validation evidence.
 
@@ -102,16 +104,22 @@ npm run db:migrate
 npm run test:integration
 ```
 
-The migration runs transactionally and can be reapplied without removing records. It only
-creates the initial table if absent; it does not upgrade an existing table's definition.
-Future schema changes need new numbered migrations rather than editing a committed migration.
+The migration command explicitly applies `001_employees.sql` then `002_salary_history.sql`
+in one transaction. It can be reapplied without removing records; it creates missing tables/indexes
+but does not upgrade existing definitions. Future schema changes need new numbered migrations
+rather than editing a committed migration. Include `apps/api/migrations` in deployment artifacts;
+the compiled CLI is `node apps/api/dist/migrate-cli.js` after building.
 
 Integration tests require the database name `acme_test`. They create a random private schema,
-truncate only that schema's employee table between tests, and remove the schema afterward.
+truncate only that schema's employee/history tables between tests, and remove the schema afterward.
 They never use `DATABASE_URL` or the development database. A killed test process may leave
 its test schema behind; later runs use different names.
 
 To stop the local database when finished: `brew services stop postgresql@18`.
+
+Salary persistence uses the employee's existing currency and exact decimal strings. A row lock
+serializes edits; salary and history commit together. Unchanged normalized amounts return
+`salary_unchanged` without history. Task 7A adds no salary HTTP endpoint or browser workflow.
 
 ## Employee HTTP API
 
