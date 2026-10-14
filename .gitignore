@@ -1,0 +1,6 @@
+CODEX_CONTEXT.md
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
