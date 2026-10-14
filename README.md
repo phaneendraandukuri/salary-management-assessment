@@ -19,7 +19,8 @@ summary identifies the displayed results. Apply and Reset return to page 1. Pagi
 creation, and salary-save refresh preserve applied criteria, ignoring unapplied edits.
 New employees may not match active filters. Salary sorting compares nominal amounts without
 conversion; use a currency filter for same-currency comparisons.
-Analytics, authentication, and
+Compensation insights are available through the API; the React insights view remains pending.
+Authentication and
 deployment are not implemented yet.
 
 ## Local setup
@@ -165,6 +166,19 @@ serializes edits; salary and history commit together. Unchanged normalized amoun
 `salary_unchanged` without history.
 
 ## Employee HTTP API
+
+- `GET /api/compensation-insights` returns `{ "groupBy": "currency", "headcount": 10000,
+  "groups": [...] }`. Optional exact country/department filters are trimmed, blanks omitted,
+  and combined with AND. `groupBy` is currency (default), country, or department. Every group
+  includes currency, groupValue (null for currency grouping), headcount, total, average, median,
+  minimum, and maximum. All monetary fields are two-place strings; groups sort by groupValue
+  then currency in deterministic C collation. Overall headcount counts matching employees;
+  group counts reconcile with it. No matches return zero headcount and an empty groups array.
+  Averages/medians round half-up for positive values only at response precision. Median uses
+  the middle value or mean of the two middle values. Invalid filters/grouping return 400
+  invalid_query with field; database/aggregate failures use the existing sanitized 500.
+  Country/department breakdowns also partition every statistic by currency; no mixed-currency
+  monetary total is returned. Statistics use current salaries, not salary history.
 
 - `GET /api/employees?page=1&pageSize=25` returns
   `{ "employees": [...], "page": 1, "pageSize": 25, "total": 42 }`.

@@ -1,4 +1,7 @@
 import express from 'express';
+import type { CompensationInsights } from './compensation-insights.js';
+import type { InsightsQuery } from './insights-query.js';
+import { parseInsightsQuery } from './insights-query.js';
 import { posix } from 'node:path';
 import type { ErrorRequestHandler } from 'express';
 import type { CreateEmployeeResult } from './create-employee.js';
@@ -11,6 +14,7 @@ import type { UpdateSalaryResult } from './update-salary.js';
 import type { SalaryHistoryResult } from './list-salary-history.js';
 
 export type EmployeeOperations = {
+  compensationInsights: (query: InsightsQuery) => Promise<CompensationInsights>;
   createEmployee: (input: unknown) => Promise<CreateEmployeeResult>;
   listEmployees: (query: Pagination & DirectoryCriteria) => Promise<EmployeePage>;
   updateSalary: (employeeId: string, amount: unknown) => Promise<UpdateSalaryResult>;
@@ -25,6 +29,14 @@ export function createApp(operations?: EmployeeOperations, frontendDirectory?: s
   });
   if (operations) {
     app.use(express.json({ limit: '1mb' }));
+    app.get('/api/compensation-insights', async (request, response) => {
+      const query = parseInsightsQuery(request.query);
+      if (!query.ok) {
+        response.status(400).json({ error: query.error });
+        return;
+      }
+      response.json(await operations.compensationInsights(query.query));
+    });
     app.get('/api/employees', async (request, response) => {
       const pagination = parsePagination(request.query.page, request.query.pageSize);
       if (!pagination.ok) {

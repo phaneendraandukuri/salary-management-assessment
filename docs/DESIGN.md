@@ -271,3 +271,27 @@ The agreed `salary_unchanged` → HTTP 409 mapping belongs to Task 7B.
   migration framework: build/startup do not execute migrations or seeding. Local compiled smoke
   checks confirmed both migrations can be read and reapplied from another working directory.
   Cloud connectivity, authentication, insights, and safe error diagnostics remain separate work.
+
+## Backend compensation insights — Task 12A
+
+- One GET endpoint accepts trimmed, exact country/department filters and a strict grouping enum.
+  Repeated/nested/non-string criteria are invalid. Unrecognized parameters remain ignored, as
+  in the existing directory API. Grouping identifiers come from a fixed map; values use parameters.
+  No currency filter or pagination is introduced. The lightweight app injection gains one function.
+- One SQL statement filters current employees, ranks salaries within group value AND currency,
+  and aggregates those same partitions. Currency grouping uses a null group value. ROW_NUMBER
+  orders NUMERIC salary then employee ID; COUNT OVER establishes the partition size. Integer
+  positions (n+1)/2 and (n+2)/2 select the middle row(s), averaged with NUMERIC. No percentile_cont
+  double-precision conversion, JavaScript monetary arithmetic, or decimal library.
+- PostgreSQL SUM/AVG/MIN/MAX remain NUMERIC. ROUND(...,2)::text formats totals/extrema without
+  losing stored precision and rounds mean/median for the response (positive half-cent ties up).
+  Repeating means are represented at PostgreSQL NUMERIC calculation precision before final
+  two-place rounding. Physical NUMERIC overflow can still fail an aggregate even if individual
+  salaries are storable; HTTP sanitizes this as persistence_failed without a chosen salary ceiling.
+- Groups sort by group value then currency with C collation. Each primary-key employee appears
+  once in the filtered source and exactly one returned group; summing numeric headcounts gives
+  distinct matching employees. Only headcounts pass through Number. A single statement uses one
+  database snapshot, so counts/statistics reconcile under concurrent writes. Later requests see
+  committed salary changes; history does not contribute to these figures.
+- Exact median requires partition sorting. The local 10,000-row measurements are recorded in
+  PERFORMANCE.md; no indexes, cache, schema changes, or generic analytics framework were added.

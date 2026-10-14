@@ -1,3 +1,4 @@
+import { compensationInsights } from './compensation-insights.js';
 import { createApp } from './app.js';
 import { startupConfig } from './startup-config.js';
 import { createPool } from './database.js';
@@ -14,6 +15,7 @@ const { port, frontendDirectory } = startupConfig(process.env);
 const pool = createPool(connectionString);
 const app = createApp(
   {
+    compensationInsights: (query) => compensationInsights(pool, query),
     createEmployee: (input) => createEmployee(pool, input),
     listEmployees: (query) => listEmployees(pool, query),
     updateSalary: (employeeId, amount) => updateSalary(pool, employeeId, amount),

@@ -18,6 +18,7 @@ const employee: Employee = {
 function operations() {
   return {
     updateSalary: vi.fn<EmployeeOperations['updateSalary']>(),
+    compensationInsights: vi.fn(),
     listSalaryHistory: vi.fn<EmployeeOperations['listSalaryHistory']>(),
     createEmployee: vi
       .fn<EmployeeOperations['createEmployee']>()

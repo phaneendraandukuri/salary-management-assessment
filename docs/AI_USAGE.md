@@ -600,3 +600,43 @@ candidate servers were untouched. Final npm test passed 320 backend tests (668 m
 checks, type checks, lint, both builds, and git diff --check passed; frontend assets were unchanged.
 Node 24.18.0 was verified. Candidate review remains pending; Codex has not staged, committed,
 pushed, provisioned resources, deployed, or started another task.
+
+## Task 12A — currency-safe compensation analytics API
+
+The candidate confirmed Task 11 review, commit, and push, then approved backend insights only:
+country/department filters, currency/country/department grouping, reconciled distinct employee
+headcounts, five exact monetary statistics, and positive half-up response rounding. Codex added
+one query/parser/endpoint, minimal operation injection, focused tests, and notes. Existing test
+operation fixtures gained only the required analytics function. No React, dependency, migration,
+authentication, cloud resource, or deployment changes.
+
+| Behavior | Actual Red evidence | Green evidence |
+| --- | --- | --- |
+| Query parser | 20 failed: ignored criteria/accepted invalid input | 341 backend unit tests passed |
+| Currency-separated statistics | Returned zero headcount/empty groups | 130 PostgreSQL integration tests passed |
+| Odd/even medians | 2 failed: provisional mean returned instead of median | 135 passed |
+| Group partitions and filters | 8 failed: missing group values and unfiltered/global statistics | 143 passed |
+| HTTP contracts | 13 failed: endpoint returned 404 instead of expected statuses | 354 backend unit tests passed |
+
+Empty/default behavior and three rounding/large-precision cases passed immediately and are
+regression coverage, not new Red cycles. Three additional real HTTP/PostgreSQL checks passed
+for grouped filtered rounding, later salary edits, empty/injection handling, and actual database
+failure sanitization (146 integration tests). SQL refinement retains a single-statement snapshot
+and fixed identifiers; formatting applied Prettier without unrelated restructuring. PostgreSQL
+availability was verified outside the sandbox before integration runs; no infrastructure failure
+was claimed as Red. Final type/format/lint/build checks passed without unresolved issues.
+
+A temporary harness explicitly migrated/seeded 10,000 synthetic employees in a private acme_test
+schema, then measured the compiled analytics operation with one warmup/five calls per case and
+captured EXPLAIN for the actual SQL/parameters. Median times: currency 8.76 ms, country 9.97 ms,
+department 9.84 ms, combined India/Engineering 0.99 ms, unmatched country 0.57 ms. Counts reconciled
+and monetary results remained two-place strings. PERFORMANCE.md records plans, memory, and warm
+local limitations. The harness closed pools, dropped its schema, and exited 0. No HTTP/browser
+performance, concurrency-load, hosted connectivity, or deployment verification is claimed.
+
+Final npm test passed 354 backend tests (1.12 s) and unchanged 84 frontend tests (6.15 s).
+Explicit isolated PostgreSQL integration tests passed 146 (4.93 s). Format checks, type checks,
+lint, both builds, and git diff --check passed; frontend assets remained unchanged. Metadata
+checks found zero private test schemas and zero other acme_test connections; development data
+was untouched. Candidate review remains pending. Codex has not staged, committed, pushed,
+provisioned resources, deployed, or started Task 12B.

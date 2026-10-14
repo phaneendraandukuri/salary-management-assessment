@@ -31,6 +31,7 @@ function operations() {
     updateSalary: vi
       .fn<EmployeeOperations['updateSalary']>()
       .mockResolvedValue({ ok: true, employee }),
+    compensationInsights: vi.fn(),
     listSalaryHistory: vi
       .fn<EmployeeOperations['listSalaryHistory']>()
       .mockResolvedValue({ ok: true, historyPage }),

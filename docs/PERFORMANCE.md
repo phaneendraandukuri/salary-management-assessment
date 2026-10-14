@@ -44,3 +44,28 @@ one warmup and five timed calls, then close the pool. No speed assertions belong
 The temporary harness/schema were removed. No new indexes are justified by this small local
 baseline; hosted cold starts, concurrent load, growing history, and less uniform data remain
 unmeasured. This is not a production benchmark or availability claim.
+
+## Compensation insights baseline — Task 12A
+
+Same local PostgreSQL 18.6 / Node 24.18 environment, 14 October 2026. A fresh private acme_test
+schema was explicitly migrated/seeded with 10,000 employees and ANALYZE applied. Each compiled
+compensationInsights query ran once to warm it, then five timed calls. Times include SQL/driver
+round trips and response shaping, not HTTP, browser, or cloud latency. No speed assertions.
+
+| Query | Headcount / groups | Min / median / max, ms |
+| --- | ---: | ---: |
+| Currency summary | 10,000 / 4 | 8.50 / 8.76 / 9.12 |
+| Country + currency | 10,000 / 4 | 9.70 / 9.97 / 10.08 |
+| Department + currency | 10,000 / 20 | 9.63 / 9.84 / 9.98 |
+| India + Engineering, by department | 500 / 1 | 0.97 / 0.99 / 1.01 |
+| Unmatched country | 0 / 0 | 0.53 / 0.57 / 0.60 |
+
+EXPLAIN (ANALYZE, BUFFERS) used the actual captured SQL and parameters. Department breakdown
+scanned 10,000 rows, sorted in memory (885 kB), applied two WindowAgg stages and GroupAggregate,
+then sorted 20 output groups (26 kB): 10.04 ms execution. Combined filters still scanned 10,000
+rows but ranked only 500; sorting used 52 kB and HashAggregate 32 kB: 0.72 ms execution. All
+buffers were hits; no disk spill was observed. Headcounts reconciled and monetary fields remained
+two-place strings. Seed countries each use one currency, so mixed-currency country breakdowns
+are correctness-tested separately with smaller fixtures, not represented by this seed baseline.
+The harness closed pools and dropped its schema. No indexes or hosted-performance claims follow
+from these warm, single-client local measurements.

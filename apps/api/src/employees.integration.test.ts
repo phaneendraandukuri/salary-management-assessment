@@ -6,6 +6,7 @@ import { migrate } from './migrate.js';
 import { createEmployee } from './create-employee.js';
 import { listEmployees } from './list-employees.js';
 import request from 'supertest';
+import { compensationInsights } from './compensation-insights.js';
 import { createApp } from './app.js';
 import { updateSalary } from './update-salary.js';
 import { listSalaryHistory } from './list-salary-history.js';
@@ -272,6 +273,7 @@ describe('employee HTTP API with PostgreSQL', () => {
   function api() {
     return createApp({
       updateSalary: (employeeId, amount) => updateSalary(pool, employeeId, amount),
+      compensationInsights: (query) => compensationInsights(pool, query),
       listSalaryHistory: (employeeId, pagination) =>
         listSalaryHistory(pool, employeeId, pagination),
       createEmployee: (input) => createEmployee(pool, input),
