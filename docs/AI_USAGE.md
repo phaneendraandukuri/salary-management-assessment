@@ -521,3 +521,42 @@ data and the candidate API were untouched. Final npm test passed 268 backend tes
 Format checks, type checks, lint, both builds, and git diff --check passed. No deployment or
 10,000-row performance verification is claimed. Candidate review remains pending; Codex has
 not staged, committed, pushed, deployed, or started another task.
+
+## Task 10 — deterministic 10,000-employee seeding
+
+The candidate confirmed Task 9B review, commit, and push and approved deterministic generation,
+plausible currency-specific demo ranges, transactional batching, preserve-and-skip collisions,
+and isolated performance measurements. Codex added generator/seeding/CLI functions, npm commands,
+unit/integration tests, and documentation. No migrations, API/frontend behavior, dependencies,
+indexes, analytics, authentication, or deployment changed. No development seeding was performed.
+
+| Behavior | Actual Red evidence | Green evidence |
+| --- | --- | --- |
+| Deterministic valid generation/distribution | 6 failed: zero records/validator calls | 274 backend unit tests passed |
+| Batch insertion | Inserted count was zero instead of 10,000 | 126 PostgreSQL integration tests passed |
+| Collision/idempotency preservation | Duplicate primary-key error | 127 integration tests passed |
+| Atomic rollback | 500 seed rows survived the second-batch failure | 128 integration tests passed |
+| CLI target/environment/cleanup | 7 failed: missing target/result/error/exit behavior | 281 backend unit tests passed |
+
+A rollback-failure client-discard unit check passed immediately and is regression coverage
+(282 backend tests), not a new Red cycle. Genuine test-schema fixtures simulate a missing seed
+row and a late constraint failure; production seeding performs only conflict-skipping INSERTs.
+Refinement applied Prettier without new abstractions. Sandbox Supertest/PostgreSQL socket EPERM
+failures were rerun with approval outside the sandbox; these were infrastructure failures,
+not business Red. No type/lint/build errors remained in final checks.
+
+A temporary harness applied existing migrations in a private acme_test schema, ran the actual
+npm seed command twice (10,000 inserted, then 10,000 skipped), and verified sanitized nonzero
+failure against a schema without employee tables. Each child exited; CLI wall times were
+517/369/254 ms including npm/tsx overhead. The same 10,000-row schema supported five warmed
+compiled listEmployees calls per representative query and EXPLAIN (ANALYZE, BUFFERS) on selected
+SQL projections. Median count-plus-row timings ranged 0.47–6.88 ms; PERFORMANCE.md records
+all cases, plan/projection qualifications, storage sizes, and limitations. No HTTP/browser,
+concurrency load, hosted performance, or deployment verification is claimed.
+
+The harness closed pools and dropped its schema in finally, then exited 0. Final metadata
+checks found zero private test schemas and zero other acme_test connections. Development data
+was untouched. Final npm test passed 282 backend tests (556 ms) and unchanged 84 frontend tests
+(5.59 s). Explicit isolated PostgreSQL integration tests passed 128 (3.71 s). Format checks,
+type checks, lint, both builds, and git diff --check passed; frontend assets remained unchanged.
+Candidate review is pending. Codex has not staged, committed, pushed, deployed, or begun another task.

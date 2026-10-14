@@ -230,3 +230,25 @@ The agreed `salary_unchanged` → HTTP 409 mapping belongs to Task 7B.
   with exact-match guidance. Explicit Apply avoids per-keystroke requests and debounce state.
   No page-derived options, cache, URL persistence, dependencies, or component restructuring.
   Filtered zero results differ from an empty directory; later empty pages allow going back.
+
+## Deterministic employee seeding — Task 10
+
+- One pure generator creates 10,000 stable IDs/emails and validates each record before database
+  access. Four country/currency pairs each receive 2,500 rows; departments and roles vary within
+  each pair. Names explicitly identify synthetic data. No random seed, clock, or external data.
+- Salary whole parts use bounded integer arithmetic; fractional digits are generated separately
+  and joined as strings. No decimal monetary value passes through a JavaScript Number. Demo
+  ranges do not change application salary validation or imply exchange-rate equivalence.
+- One checked-out client executes BEGIN, twenty parameterized 500-row INSERTs, then COMMIT.
+  Each batch has 4,000 parameters. ON CONFLICT(employee_id) DO NOTHING preserves arbitrary
+  collisions and edits; actual affected-row counts establish inserted/skipped totals. No seed
+  ownership claim, history insertion, deletion, or update. An error rolls back all new rows;
+  failed rollback discards the client, and finally releases it. CLI finally closes its pool.
+- The explicit CLI requires DATABASE_URL with host/database, prints only host/port/database,
+  and does not use TEST_DATABASE_URL. Migrations remain separately invoked. Errors are sanitized.
+  A lost connection during commit can leave the outcome uncertain; preserve-and-skip makes a
+  rerun safe, but original inserted/skipped counts may be unavailable. Concurrent seeds can wait
+  on conflicts; existing PostgreSQL uniqueness still protects records.
+- Local measurements are in PERFORMANCE.md. No schema/index changes, dependencies, bulk-copy
+  library, or benchmarking framework. Full regeneration materializes 10,000 records in memory;
+  this is appropriate for the fixed assessment dataset, not a general import pipeline.

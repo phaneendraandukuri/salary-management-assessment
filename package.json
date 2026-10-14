@@ -23,7 +23,8 @@
     "format:check": "prettier --check \"apps/**/*.{ts,tsx,css,html,json}\" \"*.{js,json}\"",
     "build": "npm run build --workspaces",
     "start:api": "npm run start --workspace @acme/api",
-    "preview:web": "npm run preview --workspace @acme/web"
+    "preview:web": "npm run preview --workspace @acme/web",
+    "db:seed": "npm run db:seed --workspace @acme/api"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

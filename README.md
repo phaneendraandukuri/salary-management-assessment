@@ -19,7 +19,7 @@ summary identifies the displayed results. Apply and Reset return to page 1. Pagi
 creation, and salary-save refresh preserve applied criteria, ignoring unapplied edits.
 New employees may not match active filters. Salary sorting compares nominal amounts without
 conversion; use a currency filter for same-currency comparisons.
-Analytics, authentication, seeding, and
+Analytics, authentication, and
 deployment are not implemented yet.
 
 ## Local setup
@@ -87,7 +87,8 @@ serves the UI build locally. Vite preview is a local check, not a production hos
 - `docs/AI_USAGE.md`: actual AI assistance and validation evidence.
 
 Tests and type checking are separate from compilation. API tests are excluded from the API build.
-No deployment or 10,000-record performance claims have been verified at this stage.
+Local 10,000-record query observations are in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+Deployment and hosted performance remain unverified.
 
 ## PostgreSQL setup and integration tests
 
@@ -128,6 +129,30 @@ They never use `DATABASE_URL` or the development database. A killed test process
 its test schema behind; later runs use different names.
 
 To stop the local database when finished: `brew services stop postgresql@18`.
+
+## Synthetic seed data
+
+Apply migrations first, then explicitly select the target database:
+
+```sh
+DATABASE_URL=postgresql://localhost:5432/acme npm run db:seed
+```
+
+The CLI requires a PostgreSQL URL with an explicit host and database. It prints the target
+without credentials before inserting; it never falls back to TEST_DATABASE_URL or seeds on
+API startup. After building, the equivalent compiled command is `node apps/api/dist/seed-cli.js`
+with DATABASE_URL set. Pool connections close on success/failure; failures exit nonzero.
+
+Generation is deterministic: SEED-00001 through SEED-10000, synthetic names, unique example.test
+emails, four countries, five departments, four roles, and 2,500 employees per supported currency.
+Annual demo ranges are INR 400,000–4,000,000.99, USD 40,000–180,000.99, EUR 35,000–150,000.99,
+and GBP 30,000–130,000.99. These are illustrative ranges, not market research or validation limits.
+Amounts are exact two-place strings; every generated record passes the existing validator.
+
+Twenty parameterized batches of 500 share one transaction. Existing employee-ID conflicts are
+skipped and counted without assuming they were seeded. No employees or history are overwritten
+or removed; edited seed employees remain edited. An empty database receives exactly 10,000 rows;
+existing databases can have more. Reruns insert missing IDs only. No salary history is fabricated.
 
 Salary persistence uses the employee's existing currency and exact decimal strings. A row lock
 serializes edits; salary and history commit together. Unchanged normalized amounts return
