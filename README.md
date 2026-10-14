@@ -13,7 +13,12 @@ unsaved input; selecting another employee starts a fresh editor. Uncertain updat
 automatically retried. View history opens a separate panel with 25 changes per page, exact
 salary strings, UTC timestamps, and independent loading/error/retry states. Confirmed salary
 updates refresh the matching open history from page 1; failed updates do not refresh it.
-Directory search/filter/sort is available through the API; React controls remain pending.
+The directory provides name/email search, exact country/department filters, a currency filter,
+and ascending/descending sorting. Edit controls then Apply (or press Enter); the applied-query
+summary identifies the displayed results. Apply and Reset return to page 1. Paging, Retry,
+creation, and salary-save refresh preserve applied criteria, ignoring unapplied edits.
+New employees may not match active filters. Salary sorting compares nominal amounts without
+conversion; use a currency filter for same-currency comparisons.
 Analytics, authentication, seeding, and
 deployment are not implemented yet.
 

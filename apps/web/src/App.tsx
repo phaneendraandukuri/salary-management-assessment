@@ -6,11 +6,30 @@ import { SalaryEditForm } from './SalaryEditForm';
 import { SalaryHistory } from './SalaryHistory';
 import './App.css';
 
+const defaultCriteria = {
+  search: '',
+  country: '',
+  department: '',
+  currency: '',
+  sortBy: 'employeeId',
+  sortDirection: 'asc',
+};
+const sortFields = [
+  ['employeeId', 'Employee ID'],
+  ['name', 'Name'],
+  ['department', 'Department'],
+  ['role', 'Role'],
+  ['country', 'Country'],
+  ['currency', 'Currency'],
+  ['salaryAmount', 'Annual salary'],
+];
+
 type DirectoryState =
   { status: 'loading' } | { status: 'error' } | { status: 'loaded'; data: EmployeePage };
 
 export function App() {
-  const [request, setRequest] = useState({ page: 1, attempt: 0 });
+  const [request, setRequest] = useState({ page: 1, criteria: defaultCriteria, attempt: 0 });
+  const [draft, setDraft] = useState(defaultCriteria);
   const [state, setState] = useState<DirectoryState>({ status: 'loading' });
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [savingSalary, setSavingSalary] = useState(false);
@@ -19,9 +38,15 @@ export function App() {
     revision: number;
   } | null>(null);
   const data = state.status === 'loaded' ? state.data : null;
+  const hasFilters = Boolean(
+    request.criteria.search ||
+    request.criteria.country ||
+    request.criteria.department ||
+    request.criteria.currency,
+  );
   useEffect(() => {
     const controller = new AbortController();
-    void getEmployeePage(request.page, controller.signal)
+    void getEmployeePage(request.page, controller.signal, request.criteria)
       .then((data) => {
         if (!controller.signal.aborted) setState({ status: 'loaded', data });
       })
@@ -33,12 +58,24 @@ export function App() {
 
   function loadPage(page: number) {
     setState({ status: 'loading' });
-    setRequest({ page, attempt: request.attempt + 1 });
+    setRequest((current) => ({ ...current, page, attempt: current.attempt + 1 }));
   }
 
   function refreshDirectory() {
     setState({ status: 'loading' });
     setRequest((current) => ({ ...current, attempt: current.attempt + 1 }));
+  }
+
+  function applyCriteria(criteria: typeof defaultCriteria) {
+    const normalized = {
+      ...criteria,
+      search: criteria.search.trim(),
+      country: criteria.country.trim(),
+      department: criteria.department.trim(),
+      currency: criteria.currency.trim(),
+    };
+    setState({ status: 'loading' });
+    setRequest((current) => ({ page: 1, criteria: normalized, attempt: current.attempt + 1 }));
   }
 
   function salarySaved(employeeId: string) {
@@ -85,6 +122,110 @@ export function App() {
             </p>
           )}
         </div>
+        <form
+          aria-label="Directory controls"
+          className="directory-controls"
+          onSubmit={(event) => {
+            event.preventDefault();
+            applyCriteria(draft);
+          }}
+        >
+          <div className="directory-fields">
+            <label>
+              Name or email
+              <input
+                type="text"
+                value={draft.search}
+                onChange={(event) => setDraft({ ...draft, search: event.target.value })}
+              />
+            </label>
+            <label>
+              Filter country
+              <input
+                aria-describedby="directory-exact-guidance"
+                value={draft.country}
+                onChange={(event) => setDraft({ ...draft, country: event.target.value })}
+              />
+            </label>
+            <label>
+              Filter department
+              <input
+                aria-describedby="directory-exact-guidance"
+                value={draft.department}
+                onChange={(event) => setDraft({ ...draft, department: event.target.value })}
+              />
+            </label>
+            <label>
+              Filter currency
+              <select
+                value={draft.currency}
+                onChange={(event) => setDraft({ ...draft, currency: event.target.value })}
+              >
+                <option value="">All currencies</option>
+                {['INR', 'USD', 'EUR', 'GBP'].map((currency) => (
+                  <option key={currency}>{currency}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Sort field
+              <select
+                value={draft.sortBy}
+                onChange={(event) => setDraft({ ...draft, sortBy: event.target.value })}
+              >
+                {sortFields.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Sort direction
+              <select
+                value={draft.sortDirection}
+                onChange={(event) => setDraft({ ...draft, sortDirection: event.target.value })}
+              >
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+              </select>
+            </label>
+          </div>
+          <p id="directory-exact-guidance">
+            Exact match for country and department, including case. Edits take effect after Apply.
+          </p>
+          <div className="directory-control-actions">
+            <button type="submit">Apply</button>
+            <button
+              type="button"
+              onClick={() => {
+                setDraft(defaultCriteria);
+                applyCriteria(defaultCriteria);
+              }}
+            >
+              Reset
+            </button>
+          </div>
+        </form>
+        <p className="applied-query">
+          Applied query:{' '}
+          {[
+            request.criteria.search && `Search: ${request.criteria.search}`,
+            request.criteria.country && `Country: ${request.criteria.country}`,
+            request.criteria.department && `Department: ${request.criteria.department}`,
+            request.criteria.currency && `Currency: ${request.criteria.currency}`,
+          ]
+            .filter(Boolean)
+            .join('; ') || 'All employees'}
+          ; Sort: {sortFields.find(([value]) => value === request.criteria.sortBy)?.[1]}{' '}
+          {request.criteria.sortDirection === 'desc' ? 'descending' : 'ascending'}.
+        </p>
+        {request.criteria.sortBy === 'salaryAmount' && (
+          <p className="salary-sort-guidance">
+            Salary sorting compares nominal amounts in their original currencies, without
+            conversion. Filter by currency for same-currency comparisons.
+          </p>
+        )}
         {state.status === 'loading' && (
           <p className="notice" role="status">
             Loading employees…
@@ -98,7 +239,11 @@ export function App() {
         )}
         {data && data.employees.length === 0 && (
           <p className="notice">
-            {data.total === 0 ? 'No employees yet.' : 'No employees on this page.'}
+            {data.total === 0
+              ? hasFilters
+                ? 'No employees match these criteria.'
+                : 'No employees yet.'
+              : 'No employees on this page.'}
           </p>
         )}
         {data && data.employees.length > 0 && (

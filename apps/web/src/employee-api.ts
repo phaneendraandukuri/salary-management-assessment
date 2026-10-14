@@ -16,8 +16,32 @@ export type EmployeePage = {
   total: number;
 };
 
-export async function getEmployeePage(page: number, signal: AbortSignal): Promise<EmployeePage> {
-  const response = await fetch(`/api/employees?page=${page}&pageSize=25`, { signal });
+export type DirectoryCriteria = {
+  search?: string;
+  country?: string;
+  department?: string;
+  currency?: string;
+  sortBy?: string;
+  sortDirection?: string;
+};
+
+export async function getEmployeePage(
+  page: number,
+  signal: AbortSignal,
+  criteria: DirectoryCriteria = {},
+): Promise<EmployeePage> {
+  const params = new URLSearchParams({ page: String(page), pageSize: '25' });
+  for (const [field, raw] of Object.entries(criteria)) {
+    const value = raw?.trim();
+    if (
+      !value ||
+      (field === 'sortBy' && value === 'employeeId') ||
+      (field === 'sortDirection' && value === 'asc')
+    )
+      continue;
+    params.set(field, value);
+  }
+  const response = await fetch(`/api/employees?${params}`, { signal });
   if (!response.ok) throw new Error('Unable to load employees');
   return response.json() as Promise<EmployeePage>;
 }

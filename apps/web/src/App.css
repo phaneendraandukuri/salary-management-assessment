@@ -259,3 +259,64 @@ button:disabled {
   flex-wrap: wrap;
   gap: 8px;
 }
+
+.directory-controls {
+  padding: 16px 24px 0;
+}
+.directory-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.directory-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.directory-fields input,
+.directory-fields select {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  font-weight: 400;
+  padding: 8px;
+  color: #182a3d;
+  background: white;
+  border: 1px solid #bdcbd9;
+  border-radius: 6px;
+}
+.directory-controls p,
+.applied-query,
+.salary-sort-guidance {
+  color: #526276;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.directory-control-actions {
+  display: flex;
+  gap: 8px;
+}
+.applied-query,
+.salary-sort-guidance {
+  margin: 12px 24px;
+}
+@media (max-width: 600px) {
+  .directory-controls {
+    padding: 16px 16px 0;
+  }
+  .directory-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .applied-query,
+  .salary-sort-guidance {
+    margin: 12px 16px;
+  }
+}
+@media (max-width: 380px) {
+  .directory-fields {
+    grid-template-columns: 1fr;
+  }
+}

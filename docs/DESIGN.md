@@ -212,3 +212,21 @@ The agreed `salary_unchanged` → HTTP 409 mapping belongs to Task 7B.
 - Keep simple scans and LIMIT/OFFSET for now. No new indexes/extensions are justified before
   reproducible 10,000-row measurements. Counts/rows remain separate snapshots under concurrent
   writes. Frontend controls, seeding, and performance verification belong to later increments.
+
+## React directory controls — Task 9B
+
+- Keep controlled draft values separate from the applied criteria in the existing request
+  state. Apply trims filters and requests page 1; Reset restores all defaults and requests
+  page 1 even during loading/error. Neither control is disabled by a directory request.
+  A persistent summary describes applied criteria rather than pending edits.
+- Paging, Retry, creation, and confirmed salary-save refresh use functional updates to retain
+  the latest applied criteria/page. Existing effect cleanup and aborted-result guards protect
+  against obsolete responses. Salary editor/history state remains independent.
+- Extend the existing GET helper with optional string criteria and URLSearchParams encoding.
+  Native selects provide supported choices; the backend remains authoritative for validation.
+  Omit blank filters and default sort parameters, preserving the original no-criteria URL.
+  No monetary conversion, client filtering, or employee sorting occurs in React.
+- Put a responsive labeled form inside the directory card; country/department are text fields
+  with exact-match guidance. Explicit Apply avoids per-keystroke requests and debounce state.
+  No page-derived options, cache, URL persistence, dependencies, or component restructuring.
+  Filtered zero results differ from an empty directory; later empty pages allow going back.

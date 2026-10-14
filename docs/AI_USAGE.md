@@ -479,3 +479,45 @@ Final metadata checks found zero private test schemas and zero other acme_test c
 No manual browser/deployment or 10,000-row performance verification is claimed for this backend
 increment. Candidate review remains pending; Codex has not staged, committed, pushed, deployed,
 or started Task 9B.
+
+## Task 9B — React directory controls
+
+The candidate confirmed Task 9A review, commit, and push and approved explicit Apply/Reset,
+separate draft/applied criteria, compact controls, and existing workflow preservation. Codex
+implemented only frontend controls, GET query serialization, scoped CSS, tests, and notes.
+No backend, dependency, migration, seeding, insights, authentication, or hosting changes.
+
+| Behavior | Actual Red evidence | Green evidence |
+| --- | --- | --- |
+| GET criteria encoding | Selected criteria missing from request | 75 frontend tests passed |
+| Draft/Apply and pending Reset | 2 failed: missing controls | 77 passed |
+| Filtered empty results | Missing filtered-empty message with original empty behavior | 84 passed |
+
+Six new regression tests passed using existing/focused state handling: paging/Retry/error Reset,
+obsolete success/failure after Apply/Reset/paging, and creation/salary-save refresh preservation
+with obsolete refresh protection. They are not separate Red cycles. Two test-fixture mistakes
+(reusing a consumed Response and incorrect queued responses) were corrected; the original empty
+behavior was then tested independently before its final change. Type checks caught unsupported
+Testing Library role-query exact options; these test-only options were removed. Fixture/type
+failures are not claimed as business Red. Refactoring extracted the filter-presence expression
+and applied Prettier without component restructuring.
+
+Manual Chrome verification used temporary API/Vite servers and a private acme_test schema with
+28 synthetic employees: literal 100%_\\ search, exact large salary string, draft/applied separation,
+combined country/department/currency filters, numeric descending salary order, and page 2 with
+criteria preserved (26 matches split 25/1). A browser salary save normalized 00100.5 to 100.50,
+kept filtered directory page 2, and refreshed open history with the matching change. API-down
+paging showed an error; Retry after restart used applied criteria despite an unapplied search
+edit. Apply showed no matches, and Reset restored all defaults/page 1 with 28 records. Screenshot:
+`/private/tmp/acme-directory-controls.png`, outside Git. Creation refresh, obsolete requests,
+Reset during a pending request, and narrow-screen breakpoints were not manually reproduced;
+the first three have automated coverage, while responsive CSS received source review only.
+
+The browser tab closed; stop cleaned up both servers/pools and dropped the private schema.
+After closing terminal input, the harness exited 0. No listeners remained on its ports;
+metadata checks found zero private test schemas and zero other acme_test connections. Development
+data and the candidate API were untouched. Final npm test passed 268 backend tests (534 ms) and
+84 frontend tests (5.81 s). Explicit isolated PostgreSQL integration tests passed 125 (3.50 s).
+Format checks, type checks, lint, both builds, and git diff --check passed. No deployment or
+10,000-row performance verification is claimed. Candidate review remains pending; Codex has
+not staged, committed, pushed, deployed, or started another task.
