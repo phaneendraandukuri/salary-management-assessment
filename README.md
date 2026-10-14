@@ -10,7 +10,9 @@ appear on another page.
 Salary editing is available from directory rows: select Edit salary, enter an annual amount,
 and save in the existing currency. Confirmed saves refresh the current page. Cancel discards
 unsaved input; selecting another employee starts a fresh editor. Uncertain updates are not
-automatically retried. Paginated history is available through the API; its viewer remains pending.
+automatically retried. View history opens a separate panel with 25 changes per page, exact
+salary strings, UTC timestamps, and independent loading/error/retry states. Confirmed salary
+updates refresh the matching open history from page 1; failed updates do not refresh it.
 Directory search/filter/sort, analytics, authentication, seeding, and
 deployment are not implemented yet.
 
@@ -123,7 +125,7 @@ To stop the local database when finished: `brew services stop postgresql@18`.
 
 Salary persistence uses the employee's existing currency and exact decimal strings. A row lock
 serializes edits; salary and history commit together. Unchanged normalized amounts return
-`salary_unchanged` without history. The history browser workflow remains pending.
+`salary_unchanged` without history.
 
 ## Employee HTTP API
 

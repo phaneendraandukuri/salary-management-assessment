@@ -401,3 +401,47 @@ lint, both builds, and diff checks passed; Vite transformed 19 modules. The firs
 check identified the new form test file; a second formatting pass resolved it and format:check
 passed. Frontend tests were rerun afterward and all 51 passed. Candidate review remains pending;
 Codex has not staged, committed, pushed, deployed, or started Task 8B.
+
+## Task 8B — React salary history
+
+The candidate confirmed Task 8A review, commit, and push, then approved a separate paginated
+history panel, minimal App integration, and a GET helper. Codex implemented those, scoped CSS,
+behavioral tests, and documentation. No backend, migration, dependencies, editor implementation,
+or unrelated features changed. Only confirmed saves refresh matching open history from page 1.
+
+| Behavior | Actual Red evidence | Green evidence |
+| --- | --- | --- |
+| Loading | Missing accessible status | 52 frontend tests passed |
+| Exact rendering and empty history | 2 failed: remained loading | 54 passed |
+| Errors, retry, missing employee, response guards | 8 failed: missing feedback or invalid data accepted | 62 passed |
+| Pagination and empty later page | 2 failed: Next disabled or empty message missing | 64 passed |
+| Obsolete success/failure | 2 failed: old response replaced current data/error state | 66 passed |
+| App selection, close/reopen | 2 failed: missing View history actions | 68 passed |
+| Confirmed save refresh and independent feedback | 2 failed: history remained on page 2 without reloading | 74 passed |
+
+Four negative save checks (conflict, server failure, network uncertainty, and a pending save for
+another employee) passed immediately and are regression coverage, not independent Red cycles.
+The error Red run included three uncaught response/network failures; these were behavioral
+failures, not infrastructure/configuration failures, and are resolved in Green. Refinement
+applied formatting and accessible table/button presentation without abstractions or extraction
+of existing components.
+
+Manual Chrome verification used temporary API/Vite servers and a private schema only in
+acme_test: 26 synthetic employees, 26 real salary changes for one employee split 25/1 over
+history pages, exact 9007199254740993.01, UTC timestamps, and independent directory pagination.
+A browser salary save created the 27th history entry and reset matching history to page 1;
+the directory remained on page 2. Stopping the temporary API produced history error feedback
+while the save confirmation stayed visible; restarting and Retry recovered. Selecting an
+employee with empty history and closing/reopening the populated panel showed correct employee
+data and page 1. StrictMode/obsolete requests, uncertain PATCH outcomes, and an immediately
+failed post-save history refresh were automated checks, not manually reproduced cases.
+Screenshot: `/private/tmp/acme-salary-history.png`, outside Git. This was not a 10,000-row test.
+
+The browser tab closed; the harness received stop, cleaned up, and exited 0 after terminal
+input closed. No listeners remained on its API/UI ports. Metadata checks found zero private
+test schemas and zero other acme_test connections; development data and the candidate API were
+untouched. Final validation: npm test passed 201 API tests (432 ms) and 74 frontend tests
+(5.49 s); explicit isolated PostgreSQL integration tests passed 105 (2.69 s). Format checks,
+type checks, lint, both builds, and git diff --check passed. Vite transformed 20 modules.
+Candidate review remains pending. Codex has not staged, committed, pushed, deployed, or begun
+another task.

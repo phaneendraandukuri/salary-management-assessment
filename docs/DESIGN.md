@@ -176,3 +176,20 @@ The agreed `salary_unchanged` → HTTP 409 mapping belongs to Task 7B.
   fields for input feedback. No automatic retry; no stale-version check or new concurrency rule.
 - Native controls, scoped styles, local types, and callbacks keep this incremental. Creation
   behavior is unchanged; history viewing remains a separate increment.
+
+## React salary history — Task 8B
+
+- A separate SalaryHistory panel owns its page, loading/error/data state, and retries. Requests
+  use 25 rows per page and retain backend ordering. Money and BIGINT history IDs stay strings;
+  timestamps display the API's ISO value under an explicit UTC heading.
+- Key the panel by employee ID and a refresh revision. Switching employees or reopening resets
+  it to page 1. Only a confirmed salary save for the currently selected employee increments
+  that revision. A functional state update checks the current selection even if it changed
+  while a save was pending. Editor confirmation and directory/history retrieval stay independent.
+- Abort requests on cleanup and ignore aborted results, including obsolete successes/errors
+  and StrictMode replay. The fetch helper checks requested employee identity, string-valued
+  fields, and pagination metadata at runtime; TypeScript assertions alone cannot validate JSON.
+  Missing employees get distinct feedback; other retrieval failures allow a same-page retry.
+- No cache, new dependencies, or client sorting. Counts/rows still inherit the API's concurrent
+  write trade-off, and displayed timestamps retain its millisecond precision. The helper checks
+  response shape rather than duplicating backend monetary or timestamp validation.

@@ -234,3 +234,28 @@ button:disabled {
   display: flex;
   gap: 12px;
 }
+
+.history-panel {
+  padding: 24px;
+  margin-bottom: 24px;
+  background: white;
+  border: 1px solid #dce3ea;
+  border-radius: 12px;
+}
+.history-panel h2 {
+  margin-bottom: 12px;
+}
+.history-panel [role='alert'] {
+  color: #932d2d;
+}
+.history-panel table {
+  min-width: 650px;
+}
+.history-panel th:last-child {
+  text-align: left;
+}
+.employee-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

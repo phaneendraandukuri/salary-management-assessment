@@ -3,6 +3,7 @@ import { getEmployeePage } from './employee-api';
 import type { Employee, EmployeePage } from './employee-api';
 import { EmployeeCreationForm } from './EmployeeCreationForm';
 import { SalaryEditForm } from './SalaryEditForm';
+import { SalaryHistory } from './SalaryHistory';
 import './App.css';
 
 type DirectoryState =
@@ -13,6 +14,10 @@ export function App() {
   const [state, setState] = useState<DirectoryState>({ status: 'loading' });
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [savingSalary, setSavingSalary] = useState(false);
+  const [historySelection, setHistorySelection] = useState<{
+    employee: Employee;
+    revision: number;
+  } | null>(null);
   const data = state.status === 'loaded' ? state.data : null;
   useEffect(() => {
     const controller = new AbortController();
@@ -36,6 +41,15 @@ export function App() {
     setRequest((current) => ({ ...current, attempt: current.attempt + 1 }));
   }
 
+  function salarySaved(employeeId: string) {
+    refreshDirectory();
+    setHistorySelection((current) =>
+      current?.employee.employeeId === employeeId
+        ? { ...current, revision: current.revision + 1 }
+        : current,
+    );
+  }
+
   return (
     <main className="directory">
       <header className="page-header">
@@ -50,9 +64,16 @@ export function App() {
         <SalaryEditForm
           key={editingEmployee.employeeId}
           employee={editingEmployee}
-          onSaved={refreshDirectory}
+          onSaved={() => salarySaved(editingEmployee.employeeId)}
           onCancel={() => setEditingEmployee(null)}
           onSavingChange={setSavingSalary}
+        />
+      )}
+      {historySelection && (
+        <SalaryHistory
+          key={`${historySelection.employee.employeeId}:${historySelection.revision}`}
+          employee={historySelection.employee}
+          onClose={() => setHistorySelection(null)}
         />
       )}
       <section className="directory-card" aria-labelledby="directory-heading">
@@ -114,13 +135,21 @@ export function App() {
                     <td>{employee.currency}</td>
                     <td className="salary">{employee.salaryAmount}</td>
                     <td>
-                      <button
-                        disabled={savingSalary}
-                        aria-label={`Edit salary for ${employee.employeeId}`}
-                        onClick={() => setEditingEmployee(employee)}
-                      >
-                        Edit salary
-                      </button>
+                      <div className="employee-actions">
+                        <button
+                          disabled={savingSalary}
+                          aria-label={`Edit salary for ${employee.employeeId}`}
+                          onClick={() => setEditingEmployee(employee)}
+                        >
+                          Edit salary
+                        </button>
+                        <button
+                          aria-label={`View history for ${employee.employeeId}`}
+                          onClick={() => setHistorySelection({ employee, revision: 0 })}
+                        >
+                          View history
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

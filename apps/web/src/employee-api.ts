@@ -102,3 +102,61 @@ export async function patchSalary(
     return { ok: false, error: { code: 'update_uncertain' } };
   }
 }
+
+export type SalaryHistoryEntry = {
+  historyId: string;
+  employeeId: string;
+  currency: string;
+  oldAmount: string;
+  newAmount: string;
+  changedAt: string;
+};
+export type SalaryHistoryPage = {
+  history: SalaryHistoryEntry[];
+  page: number;
+  pageSize: number;
+  total: number;
+};
+export type SalaryHistoryResult =
+  | { ok: true; data: SalaryHistoryPage }
+  | { ok: false; error: 'employee_not_found' | 'history_failed' };
+
+export async function getSalaryHistory(
+  employeeId: string,
+  page: number,
+  signal: AbortSignal,
+): Promise<SalaryHistoryResult> {
+  try {
+    const response = await fetch(
+      `/api/employees/${encodeURIComponent(employeeId)}/salary-history?page=${page}&pageSize=25`,
+      { signal },
+    );
+    if (response.status === 404) return { ok: false, error: 'employee_not_found' };
+    if (!response.ok) return { ok: false, error: 'history_failed' };
+    const data = (await response.json()) as SalaryHistoryPage;
+    if (
+      !data ||
+      data.page !== page ||
+      data.pageSize !== 25 ||
+      !Number.isSafeInteger(data.total) ||
+      data.total < 0 ||
+      !Array.isArray(data.history) ||
+      !data.history.every(
+        (entry) =>
+          entry !== null &&
+          typeof entry === 'object' &&
+          entry.employeeId === employeeId &&
+          typeof entry.historyId === 'string' &&
+          typeof entry.oldAmount === 'string' &&
+          typeof entry.newAmount === 'string' &&
+          typeof entry.currency === 'string' &&
+          typeof entry.changedAt === 'string',
+      )
+    ) {
+      return { ok: false, error: 'history_failed' };
+    }
+    return { ok: true, data };
+  } catch {
+    return { ok: false, error: 'history_failed' };
+  }
+}
