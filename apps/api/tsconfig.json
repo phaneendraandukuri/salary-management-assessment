@@ -4,8 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "types": ["node"],
-    "rootDir": "src",
     "outDir": "dist"
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "vitest*.config.ts"]
 }

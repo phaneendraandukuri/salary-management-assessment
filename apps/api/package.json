@@ -7,16 +7,20 @@
     "dev": "tsx watch src/server.ts",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "db:migrate": "tsx src/migrate-cli.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js"
   },
   "dependencies": {
-    "express": "5.3.0"
+    "express": "5.3.0",
+    "pg": "8.23.1"
   },
   "devDependencies": {
     "@types/express": "5.0.6",
     "@types/node": "24.19.2",
+    "@types/pg": "8.23.1",
     "@types/supertest": "7.2.1",
     "supertest": "7.3.1",
     "tsx": "4.23.15",

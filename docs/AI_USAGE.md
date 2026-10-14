@@ -4,7 +4,7 @@
 
 OpenAI Codex assisted with reviewing the original assessment and project instructions,
 planning incremental delivery, refining `REQUIREMENTS.md`, and implementing the approved
-minimal repository bootstrap, and annual salary validation. The candidate owns product
+minimal repository bootstrap, annual salary validation, and employee persistence. The candidate owns product
 decisions, reviews, and commits.
 
 Representative requests (summaries, not verbatim transcripts):
@@ -96,3 +96,53 @@ Final refinement checks: `npm test` passed all 56 tests (174 ms total); type che
 linting, both builds, and `git diff --check` passed. Task 2 final review remains pending.
 
 No deployed application or seed script is claimed.
+
+## Task 3 — employee validation and persistence
+
+The candidate approved employee creation only, trimmed required text fields, case-sensitive
+employee IDs, basic email syntax, and exact PostgreSQL NUMERIC storage without a chosen
+salary ceiling. Codex added `pg`/`@types/pg`, straightforward pooling and parameterized SQL,
+one numbered migration, database constraints, and separate unit/integration configurations.
+
+Employee validation TDD: the valid-input test failed with `invalid_field` before implementation,
+then 57 total tests passed. Required-field/email tests then produced 48 behavioral failures;
+after implementation, 105 total tests passed. Ten additional object-shape, salary-reuse,
+case-preservation, and precision checks passed immediately (115 total), so they are regression
+coverage, not new Red evidence. Test case objects preserve array-valued invalid inputs rather
+than letting Vitest interpret them as parameter rows.
+
+Infrastructure: Docker reported no daemon socket; no Docker Desktop/OrbStack was found in
+Applications, and PostgreSQL executables were not on PATH. Docker Compose was also unavailable.
+The explicit integration command refused to run without a dedicated `TEST_DATABASE_URL`.
+These were infrastructure failures, not persistence Red evidence. The candidate approved
+Homebrew PostgreSQL after that pause. Homebrew was present but PostgreSQL was not installed.
+With approval, Codex installed PostgreSQL 18.6, ran it without automatic startup at login,
+and created separate `acme` and `acme_test` databases. Homebrew also installed/upgraded its
+required dependencies, including OpenSSL, certificates, readline, and xz. The unused Docker
+Compose draft was removed. Local trusted authentication is not a deployment security claim.
+
+Persistence TDD used actual PostgreSQL, only in `acme_test`:
+
+| Behavior | Red evidence | Green evidence |
+| --- | --- | --- |
+| Persistence and exact monetary round-trip | 2 failed: skeleton returned `persistence_failed`, including salary `9007199254740993.01` | 2 integration tests passed |
+| Duplicate employee ID | Second insert incorrectly returned success | 3 passed after primary key and error mapping |
+| Database correctness constraints | 30 failed: invalid direct SQL updates succeeded | 34 passed after NOT NULL/CHECK constraints |
+| Safe database errors | Numeric overflow and missing-table errors escaped | 36 passed after sanitized result mapping |
+
+Nine additional regression cases passed immediately: invalid inputs create no row, SQL-like
+text stays data, case-distinct IDs/repeated emails are allowed, concurrent duplicates store
+one row, PostgreSQL's 131,072-digit whole-part boundary round-trips exactly, and migration
+reapplication preserves records. These were not claimed as additional Red cycles.
+
+Refactoring cleaned up insert formatting; no repository framework or ORM was introduced.
+Final checks by Codex: `npm test` passed 115 tests (208 ms total); explicit
+`TEST_DATABASE_URL=postgresql://localhost:5432/acme_test npm run test:integration` passed
+45 tests (646 ms total). Type checking, linting, both builds, and `git diff --check` passed.
+The interim unused skeleton parameters are resolved. Migration succeeded twice against the
+development database, which remained empty; no integration tests connected to it. A final
+metadata check found zero leftover private test schemas in `acme_test`.
+
+No HTTP routes, frontend features, salary history, analytics, authentication, or seeding
+were added. Task 3 candidate review remains pending. No staging, commits, pushes, or work
+on the next task were performed.

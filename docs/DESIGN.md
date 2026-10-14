@@ -20,6 +20,31 @@ Decimal strings preserve exact values and serialize directly to JSON. Integer mi
 are an alternative, but JavaScript numbers require safe-integer bounds and `bigint` needs
 explicit JSON serialization. A decimal library is unnecessary for validation without arithmetic.
 
-Storage representation, database limits, arithmetic, and aggregate rounding are not implemented
-or settled here. They require decisions before their respective increments. The validator
-does not convert currencies or establish that arbitrary-sized input will fit a future database.
+Salary validation does not establish database representability. The persistence decision is
+below; arithmetic and aggregate rounding remain for their respective increments.
+
+## Employee creation — Task 3
+
+- Employee ID is a case-sensitive text primary key (`COLLATE "C"`); PostgreSQL enforces
+  uniqueness even for concurrent inserts. No extra internal ID or unique-email rule is added.
+- Trim required employee text fields and check a basic email shape. Country, department,
+  and role remain free text; this is not email deliverability or geographic validation.
+- Store salary as unconstrained `NUMERIC`, passing canonical decimal strings into SQL and
+  returning `salary_amount::text`. No JavaScript number conversion or chosen salary ceiling.
+  PostgreSQL's physical range still applies; numeric overflow becomes `amount_not_storable`.
+- `NOT NULL` and `CHECK` constraints reject blank required text, malformed email,
+  unsupported currencies, nonpositive/nonfinite salaries, and scale above two. Unconstrained
+  NUMERIC plus a scale check rejects excess precision instead of rounding it on assignment.
+- Use one parameterized `INSERT ... RETURNING`. The statement is atomic without an extra
+  application transaction. Duplicate primary keys map to `duplicate_employee_id`; unexpected
+  database failures return `persistence_failed` without exposing SQL details.
+- Use a straightforward `pg.Pool`, with explicit shutdown in scripts/tests. Migration execution
+  acquires one client, commits or rolls back, and releases it in `finally`. Only the initial
+  numbered SQL file is needed; no ORM or migration framework.
+- Keep unit tests independent of PostgreSQL. Integration tests require `acme_test`, use
+  random private schemas, and verify committed records through a separate connection pool.
+
+Native Homebrew PostgreSQL was chosen after the Docker runtime was unavailable. Local trusted
+authentication is convenient for development; hosted credentials/TLS are a separate deployment
+decision. Free-text country/department values can have inconsistent spelling; lookup tables
+and normalization rules are deliberately deferred rather than silently imposed.
