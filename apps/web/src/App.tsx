@@ -3,6 +3,7 @@ import { getEmployeePage } from './employee-api';
 import type { Employee, EmployeePage } from './employee-api';
 import { EmployeeCreationForm } from './EmployeeCreationForm';
 import { SalaryEditForm } from './SalaryEditForm';
+import { CompensationInsights } from './CompensationInsights';
 import { SalaryHistory } from './SalaryHistory';
 import './App.css';
 
@@ -28,6 +29,8 @@ type DirectoryState =
   { status: 'loading' } | { status: 'error' } | { status: 'loaded'; data: EmployeePage };
 
 export function App() {
+  const [showInsights, setShowInsights] = useState(false);
+  const [insightsVersion, setInsightsVersion] = useState(0);
   const [request, setRequest] = useState({ page: 1, criteria: defaultCriteria, attempt: 0 });
   const [draft, setDraft] = useState(defaultCriteria);
   const [state, setState] = useState<DirectoryState>({ status: 'loading' });
@@ -78,8 +81,13 @@ export function App() {
     setRequest((current) => ({ page: 1, criteria: normalized, attempt: current.attempt + 1 }));
   }
 
-  function salarySaved(employeeId: string) {
+  function employeeSaved() {
     refreshDirectory();
+    setInsightsVersion((current) => current + 1);
+  }
+
+  function salarySaved(employeeId: string) {
+    employeeSaved();
     setHistorySelection((current) =>
       current?.employee.employeeId === employeeId
         ? { ...current, revision: current.revision + 1 }
@@ -96,7 +104,16 @@ export function App() {
           Current annual base salaries, in each employee’s original currency.
         </p>
       </header>
-      <EmployeeCreationForm onCreated={refreshDirectory} />
+      <button
+        className="insights-toggle"
+        aria-expanded={showInsights}
+        aria-controls="compensation-insights"
+        onClick={() => setShowInsights((current) => !current)}
+      >
+        {showInsights ? 'Hide compensation insights' : 'Show compensation insights'}
+      </button>
+      {showInsights && <CompensationInsights refreshVersion={insightsVersion} />}
+      <EmployeeCreationForm onCreated={employeeSaved} />
       {editingEmployee && (
         <SalaryEditForm
           key={editingEmployee.employeeId}

@@ -640,3 +640,49 @@ lint, both builds, and git diff --check passed; frontend assets remained unchang
 checks found zero private test schemas and zero other acme_test connections; development data
 was untouched. Candidate review remains pending. Codex has not staged, committed, pushed,
 provisioned resources, deployed, or started Task 12B.
+
+## Task 12B — React compensation-insights panel
+
+The candidate confirmed Task 12A review, commit, and push and approved a closed-by-default
+insights panel with explicit Apply/Reset, reset on reopening, exact string display, independent
+states, focused response checks, and confirmed-write refreshes. Codex added one component,
+GET helper/local types, minimal App callbacks/styles, tests, and documentation. No backend,
+dependencies, navigation, authentication, cloud resources, or deployment changes.
+
+| Behavior | Actual Red evidence | Green evidence |
+| --- | --- | --- |
+| Encoded GET and loading | 2 failed: missing query values/status | 86 frontend tests passed |
+| Exact statistics and empty results | 2 failed: stayed loading | 88 passed |
+| Draft/Apply/Reset breakdowns | 2 failed: missing controls | 90 passed |
+| Errors/Retry and response guards | 10 failed: missing alerts or invalid data accepted | 100 passed |
+| Obsolete responses | 5 failed: old success/error replaced current results | 105 passed |
+| App close/reopen | Missing Show insights action | 106 passed |
+| Confirmed-write refresh | 4 failed: missing refreshed statistics/error state | 115 passed |
+
+Five failed/uncertain mutation checks passed immediately and are regression coverage, not
+additional Red cycles. The error Red run included four uncaught behavioral response/network
+errors and a duplicate React key warning; validation/handling resolved these in Green. Refined
+scoped table spacing after screenshot review, reused existing form styles, and applied Prettier
+without extracting or restructuring existing components. Final type/lint checks passed.
+
+Manual Chrome verification used temporary API/Vite servers and a private acme_test schema:
+five synthetic fixtures spanning four currencies, including two USD values 100.00/100.01 and
+exact INR 9007199254740993.01. Currency/country/department views retained separate monetary rows;
+USD mean/median rounded to 100.01. Applied India/Engineering filters stayed active despite a UK
+draft when a browser salary save and sixth employee creation refreshed insights. Updated USD
+statistics were total 550.01, average 183.34, median 200.00, minimum 100.01, maximum 250.00.
+API-down insights failure left the directory and both write confirmations intact. After restart,
+Retry retained applied grouping/filters despite new drafts. Apply produced empty results;
+Reset and close/reopen restored default six-employee currency insights. Screenshot outside Git:
+/private/tmp/acme-compensation-insights.png. Obsolete requests, failed/uncertain mutations, and
+immediately failed post-write retrieval were automated checks, not manually reproduced cases.
+Mobile breakpoints were source-reviewed, not separately browser-tested.
+
+The browser tab closed; stop shut down servers/pools and removed the private schema. Closing
+terminal input allowed harness exit 0. No listeners remained on its API/UI ports; metadata
+checks found zero private test schemas and zero other acme_test connections. Development data
+and candidate servers were untouched. Final npm test passed unchanged 354 backend tests (669 ms)
+and 115 frontend tests (6.15 s). Isolated PostgreSQL integration tests passed 146 (4.96 s).
+Format checks, type checks, lint, both builds, and git diff --check passed. No hosted/10,000-row
+UI verification is claimed. Candidate review remains pending; Codex has not staged, committed,
+pushed, provisioned resources, deployed, or begun Task 12C.

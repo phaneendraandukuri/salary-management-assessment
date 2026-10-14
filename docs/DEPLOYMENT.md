@@ -2,7 +2,7 @@
 
 Selected approach: one Render Free Node web service serves Express and the React build;
 Neon Free stores PostgreSQL data. No cloud resources or deployment have been verified yet.
-Authentication and compensation insights remain required before submission.
+Authentication remains required before submission; cloud verification is still pending.
 
 ## Preparation (local, no cloud action)
 

@@ -295,3 +295,23 @@ The agreed `salary_unchanged` → HTTP 409 mapping belongs to Task 7B.
   committed salary changes; history does not contribute to these figures.
 - Exact median requires partition sorting. The local 10,000-row measurements are recorded in
   PERFORMANCE.md; no indexes, cache, schema changes, or generic analytics framework were added.
+
+## React compensation insights — Task 12B
+
+- One independent panel starts closed. Opening mounts fresh defaults; closing unmounts and
+  aborts requests. Draft country/department/grouping values stay separate from applied query
+  state. Apply/Reset/Retry use the existing local-state approach; no router, cache, or library.
+- A small GET helper checks requested grouping, supported currencies, group labels, exact
+  two-place monetary strings, unique group keys, and safe/reconciled headcounts. It validates
+  response shape without recalculating compensation. Only employee counts use numeric addition.
+- Loaded/error results carry their request reference and refresh version. A result for another
+  request/version renders as loading immediately, including before a refresh effect executes.
+  Cleanup aborts, and both success/failure handlers ignore aborted results, including StrictMode.
+  The state union makes data available only after a matching successful request.
+- App increments a refresh version only through confirmed-write callbacks. An open panel
+  refetches its applied criteria; closed panels make no request. Directory, history, mutation
+  feedback, and insights state remain independent. No mutation retry or optimistic calculation.
+- Native selects expose the three grouping choices; their value assertion describes those
+  known options, while API validation remains authoritative. A responsive form and scrollable
+  table display currency/group values explicitly. Wide values stay exact rather than being
+  abbreviated or converted through Number. Broader navigation remains a separate increment.

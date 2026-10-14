@@ -320,3 +320,39 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+.insights-toggle {
+  margin-bottom: 20px;
+}
+.insights-panel {
+  padding: 24px;
+  margin-bottom: 24px;
+  background: white;
+  border: 1px solid #dce3ea;
+  border-radius: 12px;
+}
+.insights-panel p {
+  color: #526276;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.insights-panel [role='alert'] {
+  color: #932d2d;
+}
+.insights-panel table {
+  min-width: 1000px;
+  font-size: 13px;
+}
+.insights-panel th:nth-last-child(-n + 5) {
+  text-align: right;
+}
+@media (max-width: 600px) {
+  .insights-panel {
+    padding: 16px;
+  }
+}
+.insights-panel th,
+.insights-panel td {
+  padding: 12px;
+}

@@ -19,7 +19,11 @@ summary identifies the displayed results. Apply and Reset return to page 1. Pagi
 creation, and salary-save refresh preserve applied criteria, ignoring unapplied edits.
 New employees may not match active filters. Salary sorting compares nominal amounts without
 conversion; use a currency filter for same-currency comparisons.
-Compensation insights are available through the API; the React insights view remains pending.
+Show compensation insights opens an independent panel with country/department filters and
+currency/country/department grouping. Apply/Reset and the applied summary work separately from
+the directory. Confirmed creations/salary saves refresh open insights using applied criteria;
+errors do not undo write confirmations. Closing and reopening resets filters to defaults.
+Statistics display the API's exact strings and explain its currency separation/rounding.
 Authentication and
 deployment are not implemented yet.
 
