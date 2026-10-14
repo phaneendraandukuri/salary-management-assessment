@@ -48,8 +48,8 @@ npm run dev:web
 - Vite automatically loads supported frontend environment files from `apps/web`.
 - In development, Vite proxies `/api` to `http://localhost:3000`. For a different API port,
   use `API_PROXY_TARGET=http://localhost:3001 npm run dev:web` (a shell environment variable).
-  The UI uses relative `/api` URLs. Production hosting must route these requests to the API;
-  the development proxy does not configure production routing.
+  The UI uses relative `/api` URLs. With NODE_ENV=production, Express serves the built React
+  app and API from one origin; the Vite proxy remains development-only.
 - The health endpoint confirms the API can respond; it does not check database readiness.
 
 ## Checks and builds
@@ -73,6 +73,12 @@ real browser/API verification is a separate manual check.
 
 After building, `npm run start:api` starts the compiled API, and `npm run preview:web`
 serves the UI build locally. Vite preview is a local check, not a production hosting setup.
+For a local production-mode check, set DATABASE_URL and NODE_ENV=production before start:api.
+Production startup requires apps/web/dist/index.html and its assets directory. Paths are
+module-relative, independent of the working directory. PORT defaults to 3000 and must be a
+digit-only integer from 0 to 65535 (0 selects a temporary port); the server binds to 0.0.0.0.
+Unknown API paths and missing assets return 404; there is no catch-all React fallback.
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the selected Render Free + Neon Free setup.
 
 ## Structure
 

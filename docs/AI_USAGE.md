@@ -560,3 +560,43 @@ was untouched. Final npm test passed 282 backend tests (556 ms) and unchanged 84
 (5.59 s). Explicit isolated PostgreSQL integration tests passed 128 (3.71 s). Format checks,
 type checks, lint, both builds, and git diff --check passed; frontend assets remained unchanged.
 Candidate review is pending. Codex has not staged, committed, pushed, deployed, or begun another task.
+
+## Task 11 — production static serving and deployment runbook
+
+The candidate selected Render Free + Neon Free and approved only production static serving,
+startup configuration, migration-layout verification, focused tests, and documentation. Codex
+added a small startup configuration function and optional frontend-directory wiring to createApp.
+No dependencies, migration execution changes, frontend features, authentication, insights,
+cloud resources, or deployment were introduced.
+
+| Behavior | Actual Red evidence | Green evidence |
+| --- | --- | --- |
+| PORT validation | 14 failed: explicit ports ignored and malformed ports accepted | 297 backend unit tests passed |
+| Production path/assets checks | 3 failed: path omitted and missing assets accepted | 300 passed |
+| Built HTML/asset routing | 2 failed: returned 404 instead of 200 | 304 passed |
+| Reserved API paths | 2 failed: static-file trap returned 200 | 316 passed |
+| Production server wiring | Configuration function not called | 317 passed |
+| Encoded API isolation | 3 failed: encoded/slash/dot-segment variants reached static trap | 320 passed |
+
+Default/development behavior, existing health/API checks, and ten source/environment/migration/
+missing-file cases passed immediately and are regression coverage, not additional Red cycles.
+Refinement applied Prettier and kept existing business handlers first. No broad restructuring,
+new framework, or catch-all React fallback. Tests use temporary owned fixtures and remove them.
+
+A temporary HTTP smoke harness ran the compiled production entry point from /private/tmp,
+using only a fresh private acme_test schema. Startup left the schema unmigrated. The harness
+stopped that server, explicitly ran the compiled migration CLI twice from the different working
+directory, verified both SQL files in their existing packaged layout, then restarted production.
+It checked built HTML and referenced JS/CSS content types, health, protected/missing paths,
+empty directory (no startup seeding), and synthetic create/search/salary-edit/history requests
+with exact 9007199254740993.01 to 9007199254740993.02 round-tripping. This was a scripted HTTP
+smoke check, not manual browser, Neon connectivity, or Render deployment verification.
+
+Both production server runs shut down via SIGTERM with exit 0; their ports no longer listened.
+The harness closed pools, removed its schema in finally, and exited 0. Final metadata checks
+found zero private test schemas and zero other acme_test connections. Development data and
+candidate servers were untouched. Final npm test passed 320 backend tests (668 ms) and unchanged
+84 frontend tests (5.46 s). Explicit PostgreSQL integration tests passed 128 (3.76 s). Format
+checks, type checks, lint, both builds, and git diff --check passed; frontend assets were unchanged.
+Node 24.18.0 was verified. Candidate review remains pending; Codex has not staged, committed,
+pushed, provisioned resources, deployed, or started another task.

@@ -252,3 +252,22 @@ The agreed `salary_unchanged` → HTTP 409 mapping belongs to Task 7B.
 - Local measurements are in PERFORMANCE.md. No schema/index changes, dependencies, bulk-copy
   library, or benchmarking framework. Full regeneration materializes 10,000 records in memory;
   this is appropriate for the fixed assessment dataset, not a general import pipeline.
+
+## Production static serving — Task 11
+
+- server.ts validates configuration before constructing a pool/listener. Only production mode
+  supplies the module-relative apps/web/dist directory to createApp. Required index.html and
+  assets directory are checked before listening; development remains API + Vite. PORT is a
+  digit-only safe integer from 0 to 65535; explicit IPv4 binding supports hosted access.
+- Existing health/API handlers run first. Before static middleware, normalize decoded URL paths
+  and block the reserved /api prefix, including encoded/slash/dot-segment forms. Express static
+  serves only the supplied build root, ignores dotfiles, and does not redirect directories.
+  No catch-all HTML route is needed because the UI has no client-side router. The build directory
+  is a trusted build artifact; source/environment/migration files must never be copied into it.
+- import.meta.url describes this module's location; fileURLToPath converts its relative URL to
+  an absolute filesystem path. Source and compiled modules have the same directory depth, so
+  the frontend and existing migration paths work from either layout without process.cwd().
+- Keep apps/api/migrations beside apps/api/dist in deployment artifacts. No duplicated SQL or
+  migration framework: build/startup do not execute migrations or seeding. Local compiled smoke
+  checks confirmed both migrations can be read and reapplied from another working directory.
+  Cloud connectivity, authentication, insights, and safe error diagnostics remain separate work.

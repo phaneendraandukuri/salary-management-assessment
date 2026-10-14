@@ -1,4 +1,5 @@
 import { createApp } from './app.js';
+import { startupConfig } from './startup-config.js';
 import { createPool } from './database.js';
 import { createEmployee } from './create-employee.js';
 import { listEmployees } from './list-employees.js';
@@ -9,16 +10,19 @@ const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
   throw new Error('DATABASE_URL is required to start the API');
 }
+const { port, frontendDirectory } = startupConfig(process.env);
 const pool = createPool(connectionString);
-const app = createApp({
-  createEmployee: (input) => createEmployee(pool, input),
-  listEmployees: (query) => listEmployees(pool, query),
-  updateSalary: (employeeId, amount) => updateSalary(pool, employeeId, amount),
-  listSalaryHistory: (employeeId, pagination) => listSalaryHistory(pool, employeeId, pagination),
-});
-const port = Number(process.env.PORT ?? 3000);
+const app = createApp(
+  {
+    createEmployee: (input) => createEmployee(pool, input),
+    listEmployees: (query) => listEmployees(pool, query),
+    updateSalary: (employeeId, amount) => updateSalary(pool, employeeId, amount),
+    listSalaryHistory: (employeeId, pagination) => listSalaryHistory(pool, employeeId, pagination),
+  },
+  frontendDirectory,
+);
 
-const server = app.listen(port, () => {
+const server = app.listen(port, '0.0.0.0', () => {
   const address = server.address();
   const boundPort = typeof address === 'object' && address ? address.port : port;
   console.log(`API listening on port ${boundPort}`);

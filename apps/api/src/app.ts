@@ -1,4 +1,5 @@
 import express from 'express';
+import { posix } from 'node:path';
 import type { ErrorRequestHandler } from 'express';
 import type { CreateEmployeeResult } from './create-employee.js';
 import type { EmployeePage } from './list-employees.js';
@@ -16,7 +17,7 @@ export type EmployeeOperations = {
   listSalaryHistory: (employeeId: string, pagination: Pagination) => Promise<SalaryHistoryResult>;
 };
 
-export function createApp(operations?: EmployeeOperations) {
+export function createApp(operations?: EmployeeOperations, frontendDirectory?: string) {
   const app = express();
   app.set('query parser', 'extended');
   app.get('/health', (_request, response) => {
@@ -85,6 +86,21 @@ export function createApp(operations?: EmployeeOperations) {
       if (result.ok) response.json(result.historyPage);
       else response.status(404).json({ error: result.error });
     });
+  }
+
+  if (frontendDirectory) {
+    app.use((request, response, next) => {
+      let path: string;
+      try {
+        path = posix.normalize(decodeURIComponent(request.path));
+      } catch {
+        next();
+        return;
+      }
+      if (/^\/api(?:\/|$)/i.test(path)) response.sendStatus(404);
+      else next();
+    });
+    app.use(express.static(frontendDirectory, { dotfiles: 'ignore', redirect: false }));
   }
 
   const errorHandler: ErrorRequestHandler = (error: unknown, _request, response, next) => {
