@@ -6,10 +6,9 @@ import { migrate } from './migrate.js';
 import { createEmployee } from './create-employee.js';
 import { listSalaryHistory } from './list-salary-history.js';
 import { compensationInsights } from './compensation-insights.js';
-import { createApp } from './app.js';
+import { authenticatedRequest } from './test-support/auth.js';
 import { listEmployees } from './list-employees.js';
 import { updateSalary } from './update-salary.js';
-import request from 'supertest';
 
 const connectionString = process.env.TEST_DATABASE_URL;
 if (!connectionString || new URL(connectionString).pathname !== '/acme_test') {
@@ -124,30 +123,34 @@ describe('listSalaryHistory with PostgreSQL', () => {
 });
 
 function api() {
-  return createApp({
-    createEmployee: (input) => createEmployee(pool, input),
-    listEmployees: (pagination) => listEmployees(pool, pagination),
-    updateSalary: (employeeId, amount) => updateSalary(pool, employeeId, amount),
-    compensationInsights: (query) => compensationInsights(pool, query),
-    listSalaryHistory: (employeeId, pagination) => listSalaryHistory(pool, employeeId, pagination),
-  });
+  return authenticatedRequest(
+    {
+      createEmployee: (input) => createEmployee(pool, input),
+      listEmployees: (pagination) => listEmployees(pool, pagination),
+      updateSalary: (employeeId, amount) => updateSalary(pool, employeeId, amount),
+      compensationInsights: (query) => compensationInsights(pool, query),
+      listSalaryHistory: (employeeId, pagination) =>
+        listSalaryHistory(pool, employeeId, pagination),
+    },
+    pool,
+  );
 }
 
 describe('salary HTTP API with PostgreSQL', () => {
   it('creates, updates, and paginates the exact history through HTTP', async () => {
-    const app = api();
-    expect((await request(app).post('/api/employees').send(employee)).status).toBe(201);
+    const agent = await api();
+    expect((await agent.post('/api/employees').send(employee)).status).toBe(201);
     const large = '9007199254740993.01';
-    const first = await request(app)
+    const first = await agent
       .patch(`/api/employees/${employee.employeeId}/salary`)
       .send({ salaryAmount: `00${large}`, currency: 'EUR', name: 'Ignored' });
     expect(first.status).toBe(200);
     expect(first.body).toEqual({ employee: { ...employee, salaryAmount: large } });
-    const second = await request(app)
+    const second = await agent
       .patch(`/api/employees/${employee.employeeId}/salary`)
       .send({ salaryAmount: '80000' });
     expect(second.status).toBe(200);
-    const newest = await request(app).get(
+    const newest = await agent.get(
       `/api/employees/${employee.employeeId}/salary-history?pageSize=1`,
     );
     const entry = {
@@ -160,7 +163,7 @@ describe('salary HTTP API with PostgreSQL', () => {
     };
     expect(newest.status).toBe(200);
     expect(newest.body).toEqual({ history: [entry], page: 1, pageSize: 1, total: 2 });
-    const older = await request(app).get(
+    const older = await agent.get(
       `/api/employees/${employee.employeeId}/salary-history?page=2&pageSize=1`,
     );
     expect(older.status).toBe(200);
@@ -170,34 +173,34 @@ describe('salary HTTP API with PostgreSQL', () => {
       pageSize: 1,
       total: 2,
     });
-    const beyond = await request(app).get(
+    const beyond = await agent.get(
       `/api/employees/${employee.employeeId}/salary-history?page=3&pageSize=1`,
     );
     expect(beyond.body).toEqual({ history: [], page: 3, pageSize: 1, total: 2 });
-    expect((await request(app).get('/api/employees')).body.employees).toEqual([
+    expect((await agent.get('/api/employees')).body.employees).toEqual([
       { ...employee, salaryAmount: '80000.00' },
     ]);
   });
 
   it('returns 200 and zero history for an existing employee', async () => {
     await createEmployee(pool, employee);
-    const response = await request(api()).get(
-      `/api/employees/${employee.employeeId}/salary-history`,
-    );
+    const response = await (
+      await api()
+    ).get(`/api/employees/${employee.employeeId}/salary-history`);
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ history: [], total: 0, page: 1, pageSize: 25 });
   });
 
   it('returns unchanged conflict without history', async () => {
     await createEmployee(pool, employee);
-    const app = api();
-    const response = await request(app)
+    const agent = await api();
+    const response = await agent
       .patch(`/api/employees/${employee.employeeId}/salary`)
       .send({ salaryAmount: '00075000.5' });
     expect(response.status).toBe(409);
     expect(response.body).toEqual({ error: { field: 'salaryAmount', code: 'salary_unchanged' } });
     expect(
-      (await request(app).get(`/api/employees/${employee.employeeId}/salary-history`)).body.total,
+      (await agent.get(`/api/employees/${employee.employeeId}/salary-history`)).body.total,
     ).toBe(0);
   });
 
@@ -206,11 +209,11 @@ describe('salary HTTP API with PostgreSQL', () => {
     async (endpoint) => {
       await createEmployee(pool, employee);
       const path = `/api/employees/${employee.employeeId.toLowerCase()}/${endpoint}`;
-      const app = api();
+      const agent = await api();
       const response =
         endpoint === 'salary'
-          ? await request(app).patch(path).send({ salaryAmount: '100.00' })
-          : await request(app).get(path);
+          ? await agent.patch(path).send({ salaryAmount: '100.00' })
+          : await agent.get(path);
       expect(response.status).toBe(404);
       expect(response.body).toEqual({ error: { field: 'employeeId', code: 'employee_not_found' } });
     },
@@ -220,7 +223,9 @@ describe('salary HTTP API with PostgreSQL', () => {
     'returns invalid_amount for $amount without altering records',
     async ({ amount }) => {
       await createEmployee(pool, employee);
-      const response = await request(api())
+      const response = await (
+        await api()
+      )
         .patch(`/api/employees/${employee.employeeId}/salary`)
         .send({ salaryAmount: amount });
       expect(response.status).toBe(400);
@@ -236,7 +241,9 @@ describe('salary HTTP API with PostgreSQL', () => {
 
   it('preserves amount_not_storable for numeric overflow', async () => {
     await createEmployee(pool, employee);
-    const response = await request(api())
+    const response = await (
+      await api()
+    )
       .patch(`/api/employees/${employee.employeeId}/salary`)
       .send({ salaryAmount: `${'9'.repeat(131073)}.00` });
     expect(response.status).toBe(400);
@@ -251,7 +258,9 @@ describe('salary HTTP API with PostgreSQL', () => {
       'ALTER TABLE salary_history ADD CONSTRAINT forced_http_failure CHECK (new_amount <> 100)',
     );
     try {
-      const response = await request(api())
+      const response = await (
+        await api()
+      )
         .patch(`/api/employees/${employee.employeeId}/salary`)
         .send({ salaryAmount: '100.00' });
       expect(response.status).toBe(500);
@@ -271,9 +280,9 @@ describe('salary HTTP API with PostgreSQL', () => {
     await createEmployee(pool, employee);
     await pool.query('ALTER TABLE salary_history RENAME TO unavailable_history');
     try {
-      const response = await request(api()).get(
-        `/api/employees/${employee.employeeId}/salary-history`,
-      );
+      const response = await (
+        await api()
+      ).get(`/api/employees/${employee.employeeId}/salary-history`);
       expect(response.status).toBe(500);
       expect(response.body).toEqual({ error: { code: 'persistence_failed' } });
     } finally {

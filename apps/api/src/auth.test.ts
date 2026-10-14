@@ -5,6 +5,7 @@ import { beforeAll, expect, it, vi } from 'vitest';
 import { createApp } from './app.js';
 import express from 'express';
 import { authRouter } from './auth.js';
+import { origin } from './test-support/auth.js';
 import { hashPassword } from './hr-credentials.js';
 
 const password = randomBytes(24).toString('base64url');
@@ -18,10 +19,14 @@ function setup(store = new session.MemoryStore(), production = false) {
     credentials: { username: 'hr', passwordHash, sessionSecret },
     store,
     production,
+    origin: production ? 'https://acme.example.test' : origin,
   });
 }
 function login(app: ReturnType<typeof createApp>) {
-  return request(app).post('/api/auth/login').send({ username: 'hr', password });
+  return request(app)
+    .post('/api/auth/login')
+    .set('Origin', app.get('trust proxy') === 1 ? 'https://acme.example.test' : origin)
+    .send({ username: 'hr', password });
 }
 function cookie(response: { headers: Record<string, unknown> }): string {
   const values = response.headers['set-cookie'] as string[] | undefined;
@@ -31,7 +36,10 @@ function cookie(response: { headers: Record<string, unknown> }): string {
 it('saves login before success and restores the user on session check', async () => {
   const app = setup();
   const agent = request.agent(app);
-  const loggedIn = await agent.post('/api/auth/login').send({ username: 'hr', password });
+  const loggedIn = await agent
+    .post('/api/auth/login')
+    .set('Origin', origin)
+    .send({ username: 'hr', password });
   expect(loggedIn.status).toBe(200);
   expect(loggedIn.body).toEqual({ user: { username: 'hr' } });
   expect(loggedIn.headers['cache-control']).toBe('no-store');
@@ -54,7 +62,6 @@ it('rejects missing sessions without storing an anonymous session', async () => 
 it('validates input and gives the same generic failure for wrong username and password', async () => {
   const store = new session.MemoryStore();
   const set = vi.spyOn(store, 'set');
-  const app = setup(store);
   for (const input of [
     undefined,
     [],
@@ -62,7 +69,10 @@ it('validates input and gives the same generic failure for wrong username and pa
     { username: 1, password },
     { username: 'hr', password: '' },
   ]) {
-    const response = await request(app).post('/api/auth/login').send(input);
+    const response = await request(setup(store))
+      .post('/api/auth/login')
+      .set('Origin', origin)
+      .send(input);
     expect(response.status).toBe(400);
     expect(response.body).toEqual({ error: { code: 'invalid_credentials_input' } });
   }
@@ -70,7 +80,10 @@ it('validates input and gives the same generic failure for wrong username and pa
     { username: 'unknown', password },
     { username: 'hr', password: 'incorrect' },
   ]) {
-    const response = await request(app).post('/api/auth/login').send(input);
+    const response = await request(setup(store))
+      .post('/api/auth/login')
+      .set('Origin', origin)
+      .send(input);
     expect(response.status).toBe(401);
     expect(response.body).toEqual({ error: { code: 'invalid_credentials' } });
     expect(response.headers['set-cookie']).toBeUndefined();
@@ -83,6 +96,7 @@ it('regenerates the ID on a second login and invalidates the previous session', 
   const first = await login(app);
   const second = await request(app)
     .post('/api/auth/login')
+    .set('Origin', origin)
     .set('Cookie', cookie(first))
     .send({ username: 'hr', password });
   expect(second.status).toBe(200);
@@ -98,13 +112,16 @@ it('regenerates the ID on a second login and invalidates the previous session', 
 it('destroys logout sessions and clears the cookie; repeated logout succeeds', async () => {
   const app = setup();
   const loggedIn = await login(app);
-  const response = await request(app).post('/api/auth/logout').set('Cookie', cookie(loggedIn));
+  const response = await request(app)
+    .post('/api/auth/logout')
+    .set('Origin', origin)
+    .set('Cookie', cookie(loggedIn));
   expect(response.status).toBe(204);
   expect(String(response.headers['set-cookie']).includes('Expires=Thu, 01 Jan 1970')).toBe(true);
   expect((await request(app).get('/api/auth/session').set('Cookie', cookie(loggedIn))).status).toBe(
     401,
   );
-  expect((await request(app).post('/api/auth/logout')).status).toBe(204);
+  expect((await request(app).post('/api/auth/logout').set('Origin', origin)).status).toBe(204);
 });
 
 it('sets host-only HttpOnly Lax cookies with a 30-minute lifetime for local HTTP', async () => {
@@ -122,7 +139,8 @@ it('sets host-only HttpOnly Lax cookies with a 30-minute lifetime for local HTTP
 
 it('never sends the production Secure cookie over direct HTTP', async () => {
   const response = await login(setup(new session.MemoryStore(), true));
-  expect(response.status).toBe(200);
+  expect(response.status).toBe(403);
+  expect(response.body).toEqual({ error: { code: 'https_required' } });
   expect(response.headers['set-cookie']).toBeUndefined();
 });
 
@@ -149,16 +167,18 @@ it('attempts opportunistic pruning without failing a valid login when cleanup fa
 
 it('sets Secure on a production cookie when the connection is HTTPS', async () => {
   const app = express();
+  app.set('trust proxy', 1);
   app.use((req, _res, next) => {
     Object.defineProperty(req.socket, 'encrypted', { value: true });
     next();
   });
   app.use(
-    '/api/auth',
+    '/api',
     authRouter({
       credentials: { username: 'hr', passwordHash, sessionSecret },
       store: new session.MemoryStore(),
       production: true,
+      origin: 'https://acme.example.test',
     }),
   );
   const response = await login(app);
@@ -181,7 +201,10 @@ it.each(['get', 'set', 'destroy'] as const)(
         ? await request(app).get('/api/auth/session').set('Cookie', cookie(loggedIn))
         : method === 'set'
           ? await login(app)
-          : await request(app).post('/api/auth/logout').set('Cookie', cookie(loggedIn));
+          : await request(app)
+              .post('/api/auth/logout')
+              .set('Origin', origin)
+              .set('Cookie', cookie(loggedIn));
     expect(response.status).toBe(500);
     expect(response.body).toEqual({ error: { code: 'persistence_failed' } });
     expect(response.headers['set-cookie']).toBeUndefined();
@@ -197,6 +220,7 @@ it('fails closed when regeneration cannot delete the previous session', async ()
   );
   const response = await request(app)
     .post('/api/auth/login')
+    .set('Origin', origin)
     .set('Cookie', cookie(loggedIn))
     .send({ username: 'hr', password });
   expect(response.status).toBe(500);

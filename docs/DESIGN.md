@@ -342,3 +342,39 @@ The agreed `salary_unchanged` → HTTP 409 mapping belongs to Task 7B.
 - This increment is not production-ready. Business API protection, origin checks, throttling,
   expiry policy and proxy verification remain mandatory. React login and deployment are
   separate increments; safe diagnostics remain separately deferred.
+
+## Backend authentication hardening — Task 13A-2
+
+- Session middleware now covers /api; employee/salary/history/insights routes require the HR
+  session. Supplying business operations without auth configuration fails app creation. No
+  production bypass exists. Health/assets stay outside session middleware. API responses use
+  no-store; HTTPS/Origin checks precede parsing, throttling precedes login parsing/session IO,
+  and authentication/renewal precedes business parsing and operations.
+- createdAt stays fixed from login; lastActivityAt tracks persisted authenticated activity.
+  Invalid/missing/future timestamps, >=30-minute idle time or >=eight-hour age reject the
+  session. Renewed expiry is min(idle window, absolute time remaining). Store expiry uses
+  whole-second rounding; the metadata check enforces the precise millisecond boundary.
+- Each session's reload/renewal, login regeneration and logout serialize using a small
+  process-local Promise chain. Reload inside the lock prevents a stale request from overwriting
+  newer activity or restoring a deleted session. The established library still owns all session
+  reads/writes/deletion; no custom persistence SQL or migration was introduced. Locks release
+  in finally, discard idle entries and exclude business queries. This supports the selected
+  single-process deployment, not distributed replicas.
+- Renewal explicitly saves before business execution; implicit pg-store touch is disabled.
+  Failed renewal unsets only this request's session, preventing an automatic response-end
+  save while preserving another request's valid session. Expired-session deletion and pruning
+  remain best effort. A reload of a concurrently removed row maps the session library's fixed
+  missing-row error to 401; real storage errors remain sanitized 500.
+- APP_ORIGIN is one exact canonical HTTP origin (HTTPS in production). Unsafe API methods
+  require it, including login/logout. No CORS or Referer fallback is added. Vite preserves
+  browser Origin despite changing the proxied Host. Production trusts one hop; development
+  ignores forwarding headers. Hosted topology remains unverified.
+- express-rate-limit provides five/IP and 60/global attempts per 15 minutes, counting all
+  permitted-origin attempts. Global limiting runs first to bound per-IP bucket growth; the
+  library handles IPv6 subnet keys. Two asynchronous scrypt jobs may run; excess jobs receive
+  503 without queuing and slots release in finally. Process-local counters reset on restart;
+  shared-IP reviewers or global abuse can temporarily exhaust limits.
+- A shared test-only helper uses real login and cookies, with runtime-random credentials and
+  MemoryStore for ordinary HTTP tests, PostgreSQL for integration tests. Business assertions
+  remain intact. The helper is excluded from production compilation. React login and safe
+  diagnostics remain separate increments.

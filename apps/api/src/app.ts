@@ -27,12 +27,14 @@ export function createApp(
   frontendDirectory?: string,
   auth?: AuthOptions,
 ) {
+  if (operations && !auth) throw new Error('Authentication configuration is required');
   const app = express();
+  app.set('trust proxy', auth?.production ? 1 : false);
   app.set('query parser', 'extended');
   app.get('/health', (_request, response) => {
     response.json({ status: 'ok' });
   });
-  if (auth) app.use('/api/auth', authRouter(auth));
+  if (auth) app.use('/api', authRouter(auth));
   if (operations) {
     app.use(express.json({ limit: '1mb' }));
     app.get('/api/compensation-insights', async (request, response) => {

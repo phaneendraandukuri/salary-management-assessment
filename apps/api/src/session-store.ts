@@ -10,5 +10,6 @@ export function createSessionStore(pool: Pool) {
     tableName: 'hr_sessions',
     createTableIfMissing: false,
     pruneSessionInterval: false,
+    disableTouch: true,
   });
 }

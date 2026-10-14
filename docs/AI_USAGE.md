@@ -736,3 +736,58 @@ throttling, complete idle/eight-hour absolute expiry, and Render proxy verificat
 mandatory Task 13A-2 work. Secure cookie flags were tested with simulated HTTPS, not hosted
 Render. Candidate review remains pending. Codex has not staged, committed, pushed, provisioned
 resources, deployed or begun another task.
+
+## Task 13A-2 — API protection and authentication hardening
+
+The candidate confirmed Task 13A-1 review/commit/push and completed local verification, then
+approved only backend protection/hardening. Codex added required APP_ORIGIN validation,
+API-wide session wiring, protected business routes, idle/absolute expiry, lifecycle coordination,
+Origin/HTTPS enforcement, process-local login limits, two-job verification capacity, tests and
+documentation. No React code, database migration, business query/validation/persistence behavior,
+real credentials, hosted resources or deployment was changed. Existing HTTP tests now perform
+real login through a shared test-only helper excluded from production compilation.
+
+| Behavior | Actual Red evidence | Green evidence |
+| --- | --- | --- |
+| Protect routes/configuration boundary | 6/8 failed: business requests succeeded unauthenticated, missing auth config accepted | 8 passed |
+| Lifetime metadata, boundaries, renewal and failure handling | 10/10 failed: missing timestamps, expiry accepted, renewal absent | 18 expiry/protection checks passed |
+| Concurrent lifecycle safety | 2 failed: old save replaced newer activity; renewal restored logged-out session | 12 expiry tests passed |
+| Origin/HTTPS/configuration/proxy handling | 22/22 failed: unchecked origins/configuration, insecure production requests accepted, proxy trust absent | 42 combined checks passed |
+| APP_ORIGIN startup wiring | App factory received no origin | Wiring test passed |
+| Login limits/capacity | Three wrong statuses (400/401 instead of 429); unbounded third verification waited until timeout | 4 focused tests passed |
+
+The concurrency test for verification slots was refined to race the HTTP result against an
+unexpected third job and release pending jobs before assertions. A sandboxed rerun encountered
+EPERM local-socket failures, which were not counted as behavioral Red; the focused suite passed
+after execution approval. Existing foundation tests were updated for Origin, lifetime fields,
+API router mounting and intentional production-HTTP rejection. Type checks caught missing
+origin options in old fixtures; lint caught one formatting-sensitive property access and an
+unused fixture. Those were fixed. Removed the redundant final username guard after Green;
+Prettier formatted only task-related source changes.
+
+Five additional real-PostgreSQL checks passed as integration/regression evidence after the
+unit-test-first implementation: persisted sliding activity, exact idle/absolute rejection,
+a trigger-induced renewal SQL failure, delayed concurrent saves and logout racing renewal.
+An additional one-millisecond-before-absolute-deadline case also passed as regression coverage.
+All business assertions remain in place; the database-failure analytics test authenticates
+against its valid isolated store while its business query uses the intentionally broken target.
+
+Final npm test passed 429 backend tests (12.79 s) and unchanged 115 frontend tests (7.05 s).
+Isolated acme_test integration tests passed 158 (18.39 s), with no development/hosted database
+use. Format checks, type checks, lint, both builds and git diff --check passed. The backend
+unit suite is slower because existing HTTP tests now perform real password verification.
+
+An automated local smoke check (not human browser verification) ran the actual Vite proxy and
+API against a private acme_test schema with runtime-random synthetic credentials. Exact UI
+Origin login/session returned 200; the same port with localhost instead of 127.0.0.1 returned
+403 for logout while retaining the active session. Correct-Origin logout returned 204, the old
+cookie returned 401 and zero session rows remained. Temporary API/Vite servers, pools and
+schema closed/removed in finally. No real passwords, hashes, secrets or cookies were printed.
+
+Process-local limits and session coordination support the selected single Node process, not
+distributed replicas. HTTPS/Secure cookies and bounded forwarded-header behavior were tested
+locally; Render's actual topology and Neon connectivity remain unverified. README environment
+loading instructions were corrected using evidence from the prior local setup troubleshooting.
+The candidate must add the non-secret APP_ORIGIN setting to their private local configuration;
+Codex did not modify that file. React login and safe diagnostics remain separate work. Candidate
+review is pending; no staging, commit, push, cloud access or subsequent task was performed.

@@ -1,6 +1,5 @@
-import request from 'supertest';
 import { expect, it, vi } from 'vitest';
-import { createApp } from './app.js';
+import { authenticatedRequest } from './test-support/auth.js';
 const insights = {
   groupBy: 'currency' as const,
   headcount: 1,
@@ -28,7 +27,7 @@ function services() {
 }
 it('returns default currency insights with exact strings', async () => {
   const operations = services();
-  const response = await request(createApp(operations)).get('/api/compensation-insights');
+  const response = await (await authenticatedRequest(operations)).get('/api/compensation-insights');
   expect(response.status).toBe(200);
   expect(response.body).toEqual(insights);
   expect(operations.compensationInsights).toHaveBeenCalledWith({ groupBy: 'currency' });
@@ -37,7 +36,9 @@ it.each(['currency', 'country', 'department'])(
   'forwards normalized filters and %s grouping',
   async (groupBy) => {
     const operations = services();
-    await request(createApp(operations))
+    await (
+      await authenticatedRequest(operations)
+    )
       .get('/api/compensation-insights')
       .query({ country: ' India ', department: ' HR ', groupBy });
     expect(operations.compensationInsights).toHaveBeenCalledWith({
@@ -58,7 +59,9 @@ it.each([
   ['groupBy=', 'groupBy'],
 ])('rejects malformed query %s without analytics', async (query, field) => {
   const operations = services();
-  const response = await request(createApp(operations)).get(`/api/compensation-insights?${query}`);
+  const response = await (
+    await authenticatedRequest(operations)
+  ).get(`/api/compensation-insights?${query}`);
   expect(response.status).toBe(400);
   expect(response.body).toEqual({ error: { field, code: 'invalid_query' } });
   expect(operations.compensationInsights).not.toHaveBeenCalled();
@@ -66,7 +69,7 @@ it.each([
 it('sanitizes unexpected database/aggregate errors', async () => {
   const operations = services();
   operations.compensationInsights.mockRejectedValueOnce(new Error('private SQL details'));
-  const response = await request(createApp(operations)).get('/api/compensation-insights');
+  const response = await (await authenticatedRequest(operations)).get('/api/compensation-insights');
   expect(response.status).toBe(500);
   expect(response.body).toEqual({ error: { code: 'persistence_failed' } });
   expect(response.text).not.toContain('private');

@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { beforeAll, afterAll, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import { createApp } from './app.js';
+import { authenticatedRequest, authOptions } from './test-support/auth.js';
+import session from 'express-session';
 
 let root: string;
 let frontend: string;
@@ -35,7 +37,7 @@ it('does not serve the frontend without explicit production configuration', asyn
 });
 it('preserves health and employee API responses with static serving configured', async () => {
   const page = { employees: [], total: 0, page: 1, pageSize: 25 };
-  const app = createApp(
+  const agent = await authenticatedRequest(
     {
       createEmployee: vi.fn(),
       listEmployees: vi.fn().mockResolvedValue(page),
@@ -43,11 +45,12 @@ it('preserves health and employee API responses with static serving configured',
       compensationInsights: vi.fn(),
       listSalaryHistory: vi.fn(),
     },
+    undefined,
     frontend,
   );
-  expect((await request(app).get('/health')).body).toEqual({ status: 'ok' });
-  expect((await request(app).get('/api/employees')).body).toEqual(page);
-  expect((await request(app).get('/api/employees?page=0')).body).toEqual({
+  expect((await agent.get('/health')).body).toEqual({ status: 'ok' });
+  expect((await agent.get('/api/employees')).body).toEqual(page);
+  expect((await agent.get('/api/employees?page=0')).body).toEqual({
     error: { field: 'page', code: 'invalid_pagination' },
   });
 });
@@ -85,4 +88,13 @@ it.each([
   const response = await request(createApp(undefined, frontend)).get(path);
   expect(response.status).toBe(404);
   expect(response.text).not.toMatch(/PRIVATE|Built ACME UI/);
+});
+
+it('serves frontend assets without session-store lookups even with a cookie', async () => {
+  const store = new session.MemoryStore();
+  const get = vi.spyOn(store, 'get');
+  const app = createApp(undefined, frontend, await authOptions(store));
+  for (const path of ['/', '/assets/app.js'])
+    expect((await request(app).get(path).set('Cookie', 'acme_session=untrusted')).status).toBe(200);
+  expect(get).not.toHaveBeenCalled();
 });

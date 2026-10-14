@@ -15,6 +15,9 @@ vi.mock('./hr-credentials.js', () => ({
   credentialConfig: vi.fn().mockReturnValue(mocks.credentials),
 }));
 vi.mock('./session-store.js', () => ({ createSessionStore: vi.fn().mockReturnValue(mocks.store) }));
+vi.mock('./auth-config.js', () => ({
+  authOrigin: vi.fn().mockReturnValue('http://127.0.0.1:5173'),
+}));
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
@@ -31,6 +34,7 @@ it('uses validated configuration, supplies the production build, and binds all I
     credentials: mocks.credentials,
     store: mocks.store,
     production: false,
+    origin: 'http://127.0.0.1:5173',
   });
   expect(mocks.listen).toHaveBeenCalledWith(1234, '0.0.0.0', expect.any(Function));
 });

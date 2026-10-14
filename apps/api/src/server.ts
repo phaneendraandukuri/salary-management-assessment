@@ -8,6 +8,7 @@ import { updateSalary } from './update-salary.js';
 import { listSalaryHistory } from './list-salary-history.js';
 import { credentialConfig } from './hr-credentials.js';
 import { createSessionStore } from './session-store.js';
+import { authOrigin } from './auth-config.js';
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -15,6 +16,7 @@ if (!connectionString) {
 }
 const { port, frontendDirectory } = startupConfig(process.env);
 const credentials = credentialConfig(process.env);
+const origin = authOrigin(process.env);
 const pool = createPool(connectionString);
 const sessionStore = createSessionStore(pool);
 const app = createApp(
@@ -26,7 +28,7 @@ const app = createApp(
     listSalaryHistory: (employeeId, pagination) => listSalaryHistory(pool, employeeId, pagination),
   },
   frontendDirectory,
-  { credentials, store: sessionStore, production: process.env.NODE_ENV === 'production' },
+  { credentials, store: sessionStore, origin, production: process.env.NODE_ENV === 'production' },
 );
 
 const server = app.listen(port, '0.0.0.0', () => {

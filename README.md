@@ -24,10 +24,10 @@ currency/country/department grouping. Apply/Reset and the applied summary work s
 the directory. Confirmed creations/salary saves refresh open insights using applied criteria;
 errors do not undo write confirmations. Closing and reopening resets filters to defaults.
 Statistics display the API's exact strings and explain its currency separation/rounding.
-The backend authentication foundation is implemented; React login and API protection remain
-pending. **Do not expose this increment publicly:** business APIs are still unprotected.
-Origin checks, login throttling, full idle/absolute expiry, and Render proxy verification are
-mandatory Task 13A-2 work. Deployment remains unverified.
+The backend requires HR authentication for employee, salary, history and insights APIs, with
+origin checks, bounded login attempts and session expiry. React login is the next separate
+increment; the existing UI cannot sign in yet. Deployment and Render's actual proxy topology
+remain unverified. Do not expose this intermediate application publicly.
 
 ## Local setup
 
@@ -41,8 +41,8 @@ npm ci
 Complete the PostgreSQL and HR credential setup below first. Run these commands in separate terminals:
 
 ```sh
-export DATABASE_URL=postgresql://localhost:5432/acme
-npm run dev:api
+env -u NODE_OPTIONS -u DATABASE_URL -u HR_USERNAME -u HR_PASSWORD_HASH -u SESSION_SECRET -u NODE_ENV -u PORT -u APP_ORIGIN \
+  node --env-file=.env.local -e 'const {spawnSync}=require("node:child_process"); const result=spawnSync("npm",["run","dev:api"],{stdio:"inherit",env:process.env}); process.exit(result.status ?? 1)'
 npm run dev:web
 ```
 
@@ -51,7 +51,9 @@ npm run dev:web
 - The API reads the optional `PORT` environment variable, defaulting to 3000.
   For example: `PORT=3001 npm run dev:api`. `.env.example` documents the setting;
   environment files are not automatically loaded by the current API startup configuration.
-- API startup requires `DATABASE_URL`, `HR_USERNAME`, `HR_PASSWORD_HASH`, and `SESSION_SECRET`.
+- API startup requires `DATABASE_URL`, `HR_USERNAME`, `HR_PASSWORD_HASH`, `SESSION_SECRET`,
+  and `APP_ORIGIN`. Add `APP_ORIGIN=http://127.0.0.1:5173` to your private `.env.local` for
+  the default Vite URL; adjust it when that URL changes. Production requires an HTTPS origin.
   Migrations must be run explicitly before employee or authentication requests.
 - Vite automatically loads supported frontend environment files from `apps/web`.
 - In development, Vite proxies `/api` to `http://localhost:3000`. For a different API port,
@@ -231,10 +233,12 @@ curl -i 'http://localhost:3000/api/employees?page=1&pageSize=25'
 Counts and page rows use separate queries, so concurrent writes can briefly make them differ.
 This applies to history pagination as well as the directory. Salary update transactions are atomic,
 but a lost connection during commit can leave the caller uncertain; do not retry automatically.
-API protection and React login remain pending. On SIGINT/SIGTERM, the server stops
+All employee APIs above require an authenticated session; writes additionally require the
+exact configured Origin. A bare curl request to the directory now returns 401.
+React login remains pending. On SIGINT/SIGTERM, the server stops
 accepting requests, waits for active requests, closes the session store, and closes the pool.
 
-## HR authentication foundation (not production-ready)
+## HR authentication (React login and hosted verification pending)
 
 Choose one HR username and a strong unique demo password (at least 12 characters). Generate
 the hash interactively; password entry is hidden and the command refuses piped input:
@@ -254,10 +258,12 @@ node --input-type=module -e "import {randomBytes} from 'node:crypto'; import {wr
 ```
 
 Supply these values through server environment variables without pasting them into shell
-commands/history, Git, logs, or `VITE_*` variables. For local startup, a private environment
-file outside Git may be explicitly loaded with Node's `--env-file` via `NODE_OPTIONS`; our API
-does not automatically load it. Quote the hash value in that file. Never reuse a real account's
-password. Transfer values securely, then remove temporary secret files when no longer needed.
+commands/history, Git, logs, or `VITE_*` variables. A root `.env.local` is already Git-ignored;
+give it owner-only permissions and quote the hash. Node must load it explicitly, then pass its
+environment to the npm subprocess as shown above. Node rejects `--env-file` in `NODE_OPTIONS`;
+on the verified Node 24.18.0, `--run` did not forward loaded values to its subprocess. Do not
+use those alternatives. The API does not automatically load environment files.
+Never reuse a real account's password. Remove temporary secret files when no longer needed.
 
 - `POST /api/auth/login` accepts `{username, password}` and returns `200 {user:{username}}`.
   Invalid input returns 400 `invalid_credentials_input`; incorrect credentials return generic
@@ -268,12 +274,25 @@ password. Transfer values securely, then remove temporary secret files when no l
 - Auth responses have `Cache-Control: no-store`. Session failures return sanitized 500
   `persistence_failed`; regeneration and saving must finish before login succeeds.
 - Sessions use PostgreSQL and a signed, host-only `acme_session` cookie with HttpOnly,
-  SameSite=Lax, Path=/ and a 30-minute lifetime. Production requires Secure; direct HTTP does
-  not receive the production cookie. Render proxy behavior is not verified in this task.
+  SameSite=Lax, Path=/ and rolling expiry. Server-side expiry is 30 minutes idle and eight hours
+  absolute, including exact boundaries. Renewal persists before business execution; its lifetime
+  is capped by remaining absolute time. Old sessions without lifetime metadata require login.
+- Every unsafe API request (including login/logout) requires exact `Origin: APP_ORIGIN`.
+  Missing/null/mismatched origins return 403 `invalid_origin`; GET does not require Origin.
+  HTTP APIs return 403 `https_required` in production. Proxy trust is one hop in production,
+  disabled in development; cookies require Secure in production. These behaviors are tested
+  locally, but Render's real forwarding topology must be verified during deployment.
+- Login allows five attempts per IP and 60 globally per 15 minutes, counting successes/failures.
+  Limits return 429 `login_rate_limited` with Retry-After. At most two password verifications
+  run concurrently; saturation returns 503 `authentication_busy` with Retry-After: 1, without
+  queuing. Limits are process-local and reset on restart; no automatic retry is performed.
 - Successful login replaces the session ID. Expired database rows cannot authenticate even
   before deletion. Login opportunistically prunes expired rows; cleanup failure does not
   invalidate a saved login. No background pruning timer repeatedly wakes Neon.
 
-Only auth routes currently load sessions. Business APIs and the existing React workflows
-remain unchanged and unprotected. Sliding idle renewal, an eight-hour absolute limit,
-origin enforcement, throttling, and production proxy verification remain Task 13A-2 work.
+Health and frontend assets stay public and make no session-store lookup. Business APIs are
+protected with their existing authenticated contracts; all API responses use no-store.
+Session loading/renewal failures prevent business execution and return sanitized errors.
+Lifecycle changes serialize per session within one process and reload current data, preventing
+stale renewal overwrites or restoration after logout. This is not distributed coordination.
+React login, safe diagnostics and actual deployment verification remain separate work.

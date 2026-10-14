@@ -2,10 +2,10 @@
 
 Selected approach: one Render Free Node web service serves Express and the React build;
 Neon Free stores PostgreSQL data. No cloud resources or deployment have been verified yet.
-Authentication foundation alone is not safe for public deployment: business APIs remain
-unprotected. Complete Task 13A-2 origin checks, throttling, full idle/absolute expiry, API
-protection and Render proxy verification, then React login integration, before exposure.
-Cloud verification is still pending.
+Backend API protection, origin checks, throttling and expiry enforcement are implemented.
+Complete React login integration and safe diagnostics before exposure. Actual Render proxy,
+TLS/cookie and Neon connectivity verification remain deployment prerequisites, not completed
+checks. Cloud verification is still pending.
 
 ## Preparation (local, no cloud action)
 
@@ -37,8 +37,13 @@ into apps/web/dist. Build and startup do not migrate or seed.
 - Server startup also requires HR_USERNAME, HR_PASSWORD_HASH and SESSION_SECRET as secret
   environment values. Generate the salted hash with the local auth:hash command and use a
   stable, random 32-byte-or-longer base64url session secret. Do not log or commit these values.
-  Changing the signing secret invalidates existing cookies. APP_ORIGIN and proxy configuration
-  will be completed/documented in Task 13A-2; do not deploy this intermediate increment.
+  Changing the signing secret invalidates existing cookies. Set APP_ORIGIN to the exact public
+  HTTPS application origin, with no trailing slash, path, query or credentials. The application
+  trusts one reverse-proxy hop in production and rejects APIs not recognized as HTTPS; verify
+  Render overwrites protocol headers and that the nearest forwarded IP identifies the client.
+  Never enable unbounded trust or disable Secure cookies to work around a deployment problem.
+  Keep one Node process/instance: session lifecycle coordination and login limits are local
+  to that process. A scaled deployment needs separately designed distributed coordination.
 - Select /health for the platform health check; it reports liveness, not database readiness.
   Set Auto-Deploy to Off after initial creation to retain manual deployment approval.
 

@@ -5,9 +5,8 @@ import { createPool } from './database.js';
 import { migrate } from './migrate.js';
 import { createEmployee } from './create-employee.js';
 import { listEmployees } from './list-employees.js';
-import request from 'supertest';
 import { compensationInsights } from './compensation-insights.js';
-import { createApp } from './app.js';
+import { authenticatedRequest } from './test-support/auth.js';
 import { updateSalary } from './update-salary.js';
 import { listSalaryHistory } from './list-salary-history.js';
 
@@ -271,30 +270,33 @@ describe('directory sorting with PostgreSQL', () => {
 
 describe('employee HTTP API with PostgreSQL', () => {
   function api() {
-    return createApp({
-      updateSalary: (employeeId, amount) => updateSalary(pool, employeeId, amount),
-      compensationInsights: (query) => compensationInsights(pool, query),
-      listSalaryHistory: (employeeId, pagination) =>
-        listSalaryHistory(pool, employeeId, pagination),
-      createEmployee: (input) => createEmployee(pool, input),
-      listEmployees: (pagination) => listEmployees(pool, pagination),
-    });
+    return authenticatedRequest(
+      {
+        updateSalary: (employeeId, amount) => updateSalary(pool, employeeId, amount),
+        compensationInsights: (query) => compensationInsights(pool, query),
+        listSalaryHistory: (employeeId, pagination) =>
+          listSalaryHistory(pool, employeeId, pagination),
+        createEmployee: (input) => createEmployee(pool, input),
+        listEmployees: (pagination) => listEmployees(pool, pagination),
+      },
+      pool,
+    );
   }
 
   it('creates and lists the same canonical employee through HTTP', async () => {
-    const app = api();
+    const agent = await api();
     const input = { ...employee, name: ' Alex Example ', salaryAmount: '009007199254740993.01' };
     const stored = { ...employee, salaryAmount: '9007199254740993.01' };
-    const created = await request(app).post('/api/employees').send(input);
+    const created = await agent.post('/api/employees').send(input);
     expect(created.status).toBe(201);
     expect(created.body).toEqual({ employee: stored });
-    const listed = await request(app).get('/api/employees?page=1&pageSize=1');
+    const listed = await agent.get('/api/employees?page=1&pageSize=1');
     expect(listed.status).toBe(200);
     expect(listed.body).toEqual({ employees: [stored], page: 1, pageSize: 1, total: 1 });
   });
 
   it('applies trimmed combined criteria, sorting, and filtered pagination through real HTTP/SQL', async () => {
-    const app = api();
+    const agent = await api();
     const first = { ...employee, employeeId: 'A', name: 'Alex 100%_!\\', salaryAmount: '100.00' };
     const second = { ...employee, employeeId: 'B', name: 'Alex 100%_!\\', salaryAmount: '9.00' };
     const excluded = { ...employee, employeeId: 'C', country: 'UK', salaryAmount: '1.00' };
@@ -308,64 +310,60 @@ describe('employee HTTP API with PostgreSQL', () => {
       sortDirection: 'asc',
       pageSize: '1',
     };
-    const firstPage = await request(app).get('/api/employees').query(query);
+    const firstPage = await agent.get('/api/employees').query(query);
     expect(firstPage.status).toBe(200);
     expect(firstPage.body).toEqual({ employees: [second], page: 1, pageSize: 1, total: 2 });
-    expect(
-      (
-        await request(app)
-          .get('/api/employees')
-          .query({ ...query, page: '2' })
-      ).body,
-    ).toEqual({ employees: [first], page: 2, pageSize: 1, total: 2 });
-    expect(
-      (
-        await request(app)
-          .get('/api/employees')
-          .query({ ...query, page: '3' })
-      ).body,
-    ).toEqual({ employees: [], page: 3, pageSize: 1, total: 2 });
+    expect((await agent.get('/api/employees').query({ ...query, page: '2' })).body).toEqual({
+      employees: [first],
+      page: 2,
+      pageSize: 1,
+      total: 2,
+    });
+    expect((await agent.get('/api/employees').query({ ...query, page: '3' })).body).toEqual({
+      employees: [],
+      page: 3,
+      pageSize: 1,
+      total: 2,
+    });
   });
 
   it('keeps SQL-like filters as values and rejects injected sort expressions', async () => {
-    const app = api();
+    const agent = await api();
     await createEmployee(pool, employee);
     expect(
-      (await request(app).get('/api/employees').query({ country: "India' OR TRUE --" })).body,
+      (await agent.get('/api/employees').query({ country: "India' OR TRUE --" })).body,
     ).toEqual({ employees: [], page: 1, pageSize: 25, total: 0 });
-    const invalid = await request(app)
+    const invalid = await agent
       .get('/api/employees')
       .query({ sortBy: 'name; DROP TABLE employees' });
     expect(invalid.status).toBe(400);
     expect(invalid.body).toEqual({ error: { field: 'sortBy', code: 'invalid_query' } });
-    expect((await request(app).get('/api/employees')).body.employees).toEqual([employee]);
+    expect((await agent.get('/api/employees')).body.employees).toEqual([employee]);
   });
 
   it('returns HTTP 409 for duplicate IDs and keeps the original employee', async () => {
-    const app = api();
-    expect((await request(app).post('/api/employees').send(employee)).status).toBe(201);
-    const duplicate = await request(app)
-      .post('/api/employees')
-      .send({ ...employee, name: 'Other Name' });
+    const agent = await api();
+    expect((await agent.post('/api/employees').send(employee)).status).toBe(201);
+    const duplicate = await agent.post('/api/employees').send({ ...employee, name: 'Other Name' });
     expect(duplicate.status).toBe(409);
     expect(duplicate.body).toEqual({
       error: { field: 'employeeId', code: 'duplicate_employee_id' },
     });
-    expect((await request(app).get('/api/employees')).body.employees).toEqual([employee]);
+    expect((await agent.get('/api/employees')).body.employees).toEqual([employee]);
   });
 
   it('returns HTTP 400 for invalid input without persisting it', async () => {
-    const app = api();
-    const response = await request(app)
-      .post('/api/employees')
-      .send({ ...employee, salaryAmount: '0' });
+    const agent = await api();
+    const response = await agent.post('/api/employees').send({ ...employee, salaryAmount: '0' });
     expect(response.status).toBe(400);
     expect(response.body).toEqual({ error: { field: 'salaryAmount', code: 'invalid_amount' } });
-    expect((await request(app).get('/api/employees')).body.total).toBe(0);
+    expect((await agent.get('/api/employees')).body.total).toBe(0);
   });
 
   it('returns HTTP 400 for database numeric overflow without leaking its message', async () => {
-    const response = await request(api())
+    const response = await (
+      await api()
+    )
       .post('/api/employees')
       .send({ ...employee, salaryAmount: `${'9'.repeat(131073)}.00` });
     expect(response.status).toBe(400);

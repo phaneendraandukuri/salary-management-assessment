@@ -1,5 +1,4 @@
-import request from 'supertest';
-import { createApp } from './app.js';
+import { authenticatedRequest } from './test-support/auth.js';
 import { listEmployees } from './list-employees.js';
 import { listSalaryHistory } from './list-salary-history.js';
 import { randomUUID } from 'node:crypto';
@@ -280,20 +279,23 @@ it('reflects confirmed salary changes without counting history as additional emp
 });
 
 function api(connection = pool) {
-  return createApp({
-    createEmployee: (input) => createEmployee(connection, input),
-    listEmployees: (query) => listEmployees(connection, query),
-    updateSalary: (id, amount) => updateSalary(connection, id, amount),
-    listSalaryHistory: (id, query) => listSalaryHistory(connection, id, query),
-    compensationInsights: (query) => compensationInsights(connection, query),
-  });
+  return authenticatedRequest(
+    {
+      createEmployee: (input) => createEmployee(connection, input),
+      listEmployees: (query) => listEmployees(connection, query),
+      updateSalary: (id, amount) => updateSalary(connection, id, amount),
+      listSalaryHistory: (id, query) => listSalaryHistory(connection, id, query),
+      compensationInsights: (query) => compensationInsights(connection, query),
+    },
+    pool,
+  );
 }
 it('returns real grouped/filtered statistics through HTTP and observes later salary updates', async () => {
   await add('100.00');
   await add('100.01');
   await add('5.00', 'INR', 'UK', 'HR');
-  const app = api();
-  const result = await request(app)
+  const agent = await api();
+  const result = await agent
     .get('/api/compensation-insights')
     .query({ country: ' India ', department: ' Engineering ', groupBy: 'country' });
   expect(result.status).toBe(200);
@@ -303,10 +305,9 @@ it('returns real grouped/filtered statistics through HTTP and observes later sal
     groups: [group('USD', stats(2, '200.01', '100.01', '100.01', '100.00', '100.01'), 'India')],
   });
   expect(
-    (await request(app).patch('/api/employees/INSIGHT-1/salary').send({ salaryAmount: '200.00' }))
-      .status,
+    (await agent.patch('/api/employees/INSIGHT-1/salary').send({ salaryAmount: '200.00' })).status,
   ).toBe(200);
-  const changed = await request(app)
+  const changed = await agent
     .get('/api/compensation-insights')
     .query({ country: 'India', department: 'Engineering' });
   expect(changed.body).toEqual({
@@ -317,13 +318,13 @@ it('returns real grouped/filtered statistics through HTTP and observes later sal
 });
 it('returns empty HTTP results and rejects SQL-like grouping without harming data', async () => {
   await add('1.00');
-  const app = api();
+  const agent = await api();
   expect(
-    (await request(app).get('/api/compensation-insights').query({ country: "' OR TRUE --" })).body,
+    (await agent.get('/api/compensation-insights').query({ country: "' OR TRUE --" })).body,
   ).toEqual({ groupBy: 'currency', headcount: 0, groups: [] });
   expect(
     (
-      await request(app)
+      await agent
         .get('/api/compensation-insights')
         .query({ groupBy: 'country; DROP TABLE employees' })
     ).status,
@@ -335,7 +336,7 @@ it('sanitizes actual database failures through HTTP', async () => {
   brokenUrl.searchParams.set('options', '-c search_path=pg_catalog');
   const broken = createPool(brokenUrl.toString());
   try {
-    const result = await request(api(broken)).get('/api/compensation-insights');
+    const result = await (await api(broken)).get('/api/compensation-insights');
     expect(result.status).toBe(500);
     expect(result.body).toEqual({ error: { code: 'persistence_failed' } });
   } finally {
