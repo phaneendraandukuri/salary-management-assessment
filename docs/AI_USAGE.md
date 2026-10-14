@@ -4,7 +4,8 @@
 
 OpenAI Codex assisted with reviewing the original assessment and project instructions,
 planning incremental delivery, refining `REQUIREMENTS.md`, and implementing the approved
-minimal repository bootstrap. The candidate owns product decisions, reviews, and commits.
+minimal repository bootstrap, and annual salary validation. The candidate owns product
+decisions, reviews, and commits.
 
 Representative requests (summaries, not verbatim transcripts):
 - Read the assessment and agreed context; propose a deadline-aware plan without editing files.
@@ -52,4 +53,46 @@ Codex has not staged or committed this bootstrap.
 npm emitted pending lifecycle-script warnings for `esbuild` and optional macOS `fsevents`.
 Codex did not grant blanket script approval; the installed tooling passed the recorded checks.
 
-No deployed application, seed script, or business behavior is claimed.
+## Task 2 — annual salary validation
+
+The candidate explicitly approved a dependency-free backend validator for INR, USD, EUR,
+and GBP: positive decimal-string amounts, at most two fractional digits, normalization to
+two decimal places, exact precision preservation, and no arbitrary maximum salary.
+Codex implemented only this validator, its tests, and concise design/AI-use notes.
+No employee persistence, API routes, schema, analytics, authentication, or UI changes were made.
+
+TDD evidence (each command ran the full API suite, including the existing health test):
+
+| Behavior | Red evidence | Green evidence |
+| --- | --- | --- |
+| Normalize valid INR amounts | 3 failed: expected success, received `invalid_amount` from an importable skeleton | 4 total tests passed |
+| Accept the other supported currencies | 3 failed: USD/EUR/GBP returned `unsupported_currency` | 17 total tests passed |
+| Reject malformed strings and excess precision | 20 failed: malformed inputs incorrectly returned success | 43 total tests passed |
+| Require positivity | 4 failed: zero values incorrectly returned success | 50 total tests passed |
+
+The initial Red command was `npm test -- --run`; npm warned about an unnecessary unknown
+`--run` option, but Vitest executed and produced the expected behavioral failures. All
+subsequent commands used `npm test`.
+
+Unsupported currencies and non-string amounts were already rejected by the earlier guards;
+those new tests passed immediately and are regression coverage, not additional Red evidence.
+Three precision/no-maximum tests also passed immediately with the string implementation,
+including an amount above JavaScript's safe-integer range and a 1,000-digit whole part.
+The full suite then had 53 passing tests. Production cleanup only wrapped the currency
+condition for readability; no additional abstraction or behavioral refactor was justified.
+
+Final validation after cleanup: `npm test` passed all 53 tests in two files (197 ms total);
+`npm run typecheck`, `npm run lint`, `npm run build`, and `git diff --check` exited 0.
+Both apps built successfully; Vite transformed 15 modules. No dependencies or configuration
+were changed. These checks were run by Codex. Candidate review of Task 2 remains pending;
+Codex has not staged, committed, or pushed this increment.
+The candidate subsequently approved canonicalizing redundant leading zeros within Task 2.
+Codex added the three requested examples before implementation. `npm test` failed exactly
+those three cases (53 existing tests passed): received `00100.50`, `000.01`, and `0000001.00`
+instead of `100.50`, `0.01`, and `1.00`. Removing leading whole-part zeros and falling back
+to `0` made all 56 tests pass (107 ms total). No numeric conversion or database limit was added.
+No further refactor was justified for this one-line normalization step.
+Final refinement checks: `npm test` passed all 56 tests (174 ms total); type checking,
+linting, both builds, and `git diff --check` passed. Task 2 final review remains pending.
+
+No deployed application or seed script is claimed.
