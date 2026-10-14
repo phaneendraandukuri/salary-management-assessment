@@ -13,7 +13,8 @@ unsaved input; selecting another employee starts a fresh editor. Uncertain updat
 automatically retried. View history opens a separate panel with 25 changes per page, exact
 salary strings, UTC timestamps, and independent loading/error/retry states. Confirmed salary
 updates refresh the matching open history from page 1; failed updates do not refresh it.
-Directory search/filter/sort, analytics, authentication, seeding, and
+Directory search/filter/sort is available through the API; React controls remain pending.
+Analytics, authentication, seeding, and
 deployment are not implemented yet.
 
 ## Local setup
@@ -134,6 +135,15 @@ serializes edits; salary and history commit together. Unchanged normalized amoun
   Defaults are page 1 and size 25; sizes must be 1–100. Pagination values must be single
   positive integer strings with safe numeric values and a safe calculated offset.
   Results are ordered by employee ID ascending; empty/beyond-end pages retain the total.
+  Optional `search` matches a case-insensitive literal substring of name or email (including
+  literal `%`, `_`, backslash, and `!`). `country`, `department`, and `currency` are exact,
+  case-sensitive filters combined with AND. Search/filter values are trimmed; blanks are omitted.
+  Currency must be INR, USD, EUR, or GBP. `sortBy` accepts `employeeId`, `name`, `department`,
+  `role`, `country`, `currency`, or `salaryAmount`; `sortDirection` accepts `asc` or `desc`.
+  Defaults remain employeeId/asc; ties use employee ID ascending. Salary sorting is numeric,
+  without currency conversion. Use a currency filter for same-currency comparisons.
+  Malformed/repeated/nested criteria and invalid sorting return 400 `invalid_query` with `field`;
+  unsupported currencies return 400 `unsupported_currency`. Pagination errors remain unchanged.
 - `POST /api/employees` accepts the eight employee fields, with `salaryAmount` as a string,
   and returns HTTP 201 with `{ "employee": {...} }`.
 - `PATCH /api/employees/:employeeId/salary` accepts `{ "salaryAmount": "80000.00" }` and returns

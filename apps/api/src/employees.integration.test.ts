@@ -84,6 +84,190 @@ describe('listEmployees with PostgreSQL', () => {
   });
 });
 
+describe('directory criteria with PostgreSQL', () => {
+  async function fixtures() {
+    const rows = [
+      {
+        ...employee,
+        employeeId: 'A',
+        name: 'Alex 100%_\\ Team',
+        email: 'alpha@example.test',
+        salaryAmount: '100.00',
+      },
+      {
+        ...employee,
+        employeeId: 'B',
+        name: 'Other',
+        email: 'ALEX@example.test',
+        country: 'UK',
+        department: 'HR',
+        currency: 'GBP',
+        salaryAmount: '20.00',
+      },
+      {
+        ...employee,
+        employeeId: 'C',
+        name: 'Alex 100XX Team',
+        email: 'charlie@example.test',
+        department: 'HR',
+        currency: 'USD',
+        salaryAmount: '9007199254740993.01',
+      },
+      {
+        ...employee,
+        employeeId: 'D',
+        name: 'Alex',
+        email: 'delta@example.test',
+        salaryAmount: '9.00',
+      },
+    ];
+    for (const row of rows) expect((await createEmployee(pool, row)).ok).toBe(true);
+    return rows;
+  }
+
+  it('searches name OR email case-insensitively and paginates matching rows/count', async () => {
+    const rows = await fixtures();
+    const result = await listEmployees(pool, { page: 2, pageSize: 2, search: 'aLeX' });
+    expect(result).toEqual({ employees: [rows[2], rows[3]], page: 2, pageSize: 2, total: 4 });
+    expect(
+      (await listEmployees(pool, { page: 1, pageSize: 25, search: 'ALPHA@' })).employees,
+    ).toEqual([rows[0]]);
+  });
+
+  it.each(['%', '_', '\\', '100%_\\'])(
+    'matches literal search %s without SQL wildcards',
+    async (search) => {
+      const rows = await fixtures();
+      expect(await listEmployees(pool, { page: 1, pageSize: 25, search })).toEqual({
+        employees: [rows[0]],
+        page: 1,
+        pageSize: 25,
+        total: 1,
+      });
+    },
+  );
+
+  it('combines search and exact country/department/currency filters with AND', async () => {
+    const rows = await fixtures();
+    expect(
+      await listEmployees(pool, {
+        page: 1,
+        pageSize: 1,
+        search: 'alex',
+        country: 'India',
+        department: 'HR',
+        currency: 'USD',
+      }),
+    ).toEqual({ employees: [rows[2]], page: 1, pageSize: 1, total: 1 });
+    expect(
+      await listEmployees(pool, {
+        page: 2,
+        pageSize: 1,
+        country: 'India',
+        department: 'HR',
+        currency: 'USD',
+      }),
+    ).toEqual({ employees: [], page: 2, pageSize: 1, total: 1 });
+  });
+
+  it.each([
+    { country: 'india' },
+    { department: 'hr' },
+    { currency: 'EUR' },
+    { search: "' OR TRUE --" },
+  ] as const)('returns no matches for exact/unmatched criteria %j', async (criteria) => {
+    await fixtures();
+    expect(await listEmployees(pool, { page: 1, pageSize: 25, ...criteria })).toEqual({
+      employees: [],
+      page: 1,
+      pageSize: 25,
+      total: 0,
+    });
+  });
+});
+
+describe('directory sorting with PostgreSQL', () => {
+  it.each([
+    'employeeId',
+    'name',
+    'department',
+    'role',
+    'country',
+    'currency',
+    'salaryAmount',
+  ] as const)('sorts %s both ways with stable ID ties and filtered page totals', async (sortBy) => {
+    const rows = [
+      {
+        ...employee,
+        employeeId: 'C',
+        name: 'Z',
+        department: 'Z',
+        role: 'Z',
+        country: 'Z',
+        currency: 'USD',
+        salaryAmount: '100.00',
+      },
+      {
+        ...employee,
+        employeeId: 'A',
+        name: 'M',
+        department: 'M',
+        role: 'M',
+        country: 'M',
+        currency: 'INR',
+        salaryAmount: '20.00',
+      },
+      {
+        ...employee,
+        employeeId: 'B',
+        name: 'M',
+        department: 'M',
+        role: 'M',
+        country: 'M',
+        currency: 'INR',
+        salaryAmount: '9.00',
+      },
+    ];
+    for (const row of rows) expect((await createEmployee(pool, row)).ok).toBe(true);
+    const ascending = sortBy === 'salaryAmount' ? ['B', 'A', 'C'] : ['A', 'B', 'C'];
+    const descending = sortBy === 'employeeId' ? ['C', 'B', 'A'] : ['C', 'A', 'B'];
+    for (const [sortDirection, ids] of [
+      ['asc', ascending],
+      ['desc', descending],
+    ] as const) {
+      const first = await listEmployees(pool, { page: 1, pageSize: 2, sortBy, sortDirection });
+      const second = await listEmployees(pool, { page: 2, pageSize: 2, sortBy, sortDirection });
+      expect(first.employees.map((row) => row.employeeId)).toEqual(ids.slice(0, 2));
+      expect(second.employees.map((row) => row.employeeId)).toEqual(ids.slice(2));
+      expect(first.total).toBe(3);
+      expect(second.total).toBe(3);
+    }
+    const filtered = await listEmployees(pool, {
+      page: 1,
+      pageSize: 1,
+      currency: 'INR',
+      sortBy,
+      sortDirection: 'desc',
+    });
+    expect(filtered.total).toBe(2);
+    expect(filtered.employees.map((row) => row.employeeId)).toEqual([
+      sortBy === 'employeeId' ? 'B' : 'A',
+    ]);
+  });
+
+  it('sorts fractional differences beyond Number precision without changing returned strings', async () => {
+    const first = { ...employee, employeeId: 'A', salaryAmount: '9007199254740993.02' };
+    const second = { ...employee, employeeId: 'B', salaryAmount: '9007199254740993.01' };
+    for (const row of [first, second]) await createEmployee(pool, row);
+    expect(await listEmployees(pool, { page: 1, pageSize: 25, sortBy: 'salaryAmount' })).toEqual({
+      employees: [second, first],
+      page: 1,
+      pageSize: 25,
+      total: 2,
+    });
+  });
+});
+
 describe('employee HTTP API with PostgreSQL', () => {
   function api() {
     return createApp({
@@ -105,6 +289,54 @@ describe('employee HTTP API with PostgreSQL', () => {
     const listed = await request(app).get('/api/employees?page=1&pageSize=1');
     expect(listed.status).toBe(200);
     expect(listed.body).toEqual({ employees: [stored], page: 1, pageSize: 1, total: 1 });
+  });
+
+  it('applies trimmed combined criteria, sorting, and filtered pagination through real HTTP/SQL', async () => {
+    const app = api();
+    const first = { ...employee, employeeId: 'A', name: 'Alex 100%_!\\', salaryAmount: '100.00' };
+    const second = { ...employee, employeeId: 'B', name: 'Alex 100%_!\\', salaryAmount: '9.00' };
+    const excluded = { ...employee, employeeId: 'C', country: 'UK', salaryAmount: '1.00' };
+    for (const row of [first, second, excluded]) await createEmployee(pool, row);
+    const query = {
+      search: ' 100%_!\\ ',
+      country: ' India ',
+      department: ' Engineering ',
+      currency: ' INR ',
+      sortBy: 'salaryAmount',
+      sortDirection: 'asc',
+      pageSize: '1',
+    };
+    const firstPage = await request(app).get('/api/employees').query(query);
+    expect(firstPage.status).toBe(200);
+    expect(firstPage.body).toEqual({ employees: [second], page: 1, pageSize: 1, total: 2 });
+    expect(
+      (
+        await request(app)
+          .get('/api/employees')
+          .query({ ...query, page: '2' })
+      ).body,
+    ).toEqual({ employees: [first], page: 2, pageSize: 1, total: 2 });
+    expect(
+      (
+        await request(app)
+          .get('/api/employees')
+          .query({ ...query, page: '3' })
+      ).body,
+    ).toEqual({ employees: [], page: 3, pageSize: 1, total: 2 });
+  });
+
+  it('keeps SQL-like filters as values and rejects injected sort expressions', async () => {
+    const app = api();
+    await createEmployee(pool, employee);
+    expect(
+      (await request(app).get('/api/employees').query({ country: "India' OR TRUE --" })).body,
+    ).toEqual({ employees: [], page: 1, pageSize: 25, total: 0 });
+    const invalid = await request(app)
+      .get('/api/employees')
+      .query({ sortBy: 'name; DROP TABLE employees' });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body).toEqual({ error: { field: 'sortBy', code: 'invalid_query' } });
+    expect((await request(app).get('/api/employees')).body.employees).toEqual([employee]);
   });
 
   it('returns HTTP 409 for duplicate IDs and keeps the original employee', async () => {

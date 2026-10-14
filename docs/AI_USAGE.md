@@ -445,3 +445,37 @@ untouched. Final validation: npm test passed 201 API tests (432 ms) and 74 front
 type checks, lint, both builds, and git diff --check passed. Vite transformed 20 modules.
 Candidate review remains pending. Codex has not staged, committed, pushed, deployed, or begun
 another task.
+
+## Task 9A — backend directory search/filter/sort
+
+The candidate confirmed Task 8B review, commit, and push and approved backend criteria only.
+Codex added a small parser, parameterized shared filters for count/rows, allowlisted sorting,
+HTTP integration, tests, and documentation. Existing pagination and response shape are preserved.
+No dependencies, migrations, frontend controls, seeding, analytics, authentication, or hosting
+changes were made. The candidate's strictly ₹0 hosting constraint is recorded for the next
+feasibility checkpoint; free PostgreSQL alternatives including Neon remain to be compared.
+
+| Behavior | Actual Red evidence | Green evidence |
+| --- | --- | --- |
+| Query parsing | 49 failed: valid criteria ignored, invalid values accepted | 251 backend unit tests passed |
+| Search and combined filters | 10 failed: filters ignored, count/rows unfiltered, criteria leaked into response | 115 PostgreSQL integration tests passed |
+| Numeric sorting and deterministic ties | 8 failed: retained ID ordering, including exact fractional difference | 123 integration tests passed |
+| HTTP criteria/error contracts | 16 failed: criteria not forwarded, invalid values returned 200 | 268 backend unit tests passed |
+
+Blank/default parser and blank HTTP checks passed immediately and are regression coverage.
+Two real HTTP/PostgreSQL tests then verified trimmed wildcard-bearing search with combined
+filters/sorted pages and SQL-like filter/sort handling (125 integration tests); these were not
+additional claimed Red cycles. Refactoring renamed the retrieval argument for clarity and
+applied formatting. That rename accidentally changed a type-only import path, caught by type
+checking/builds and corrected; it was not behavioral Red evidence. One test file needed a
+second formatter pass. No existing components or unrelated modules were restructured.
+
+Sandbox readiness reported no response; an approved outside-sandbox check verified PostgreSQL
+before behavioral integration runs. Tests used only random private schemas in acme_test.
+Final npm test passed 268 backend tests (505 ms) and unchanged 74 frontend tests (5.93 s).
+Explicit isolated PostgreSQL integration tests passed 125 (3.30 s). Format checks, type checks,
+lint, both builds, and git diff --check passed; frontend build assets remained unchanged.
+Final metadata checks found zero private test schemas and zero other acme_test connections.
+No manual browser/deployment or 10,000-row performance verification is claimed for this backend
+increment. Candidate review remains pending; Codex has not staged, committed, pushed, deployed,
+or started Task 9B.

@@ -40,6 +40,66 @@ describe('employee HTTP API', () => {
     expect(services.listEmployees).toHaveBeenCalledWith({ page: 1, pageSize: 25 });
   });
 
+  it('forwards normalized criteria with pagination and keeps the response contract', async () => {
+    const services = operations();
+    const response = await request(createApp(services)).get('/api/employees').query({
+      search: ' Alex ',
+      country: ' India ',
+      department: ' Engineering ',
+      currency: ' INR ',
+      sortBy: 'salaryAmount',
+      sortDirection: 'desc',
+      page: '2',
+      pageSize: '10',
+    });
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ employees: [employee], page: 1, pageSize: 25, total: 1 });
+    expect(services.listEmployees).toHaveBeenCalledWith({
+      page: 2,
+      pageSize: 10,
+      search: 'Alex',
+      country: 'India',
+      department: 'Engineering',
+      currency: 'INR',
+      sortBy: 'salaryAmount',
+      sortDirection: 'desc',
+    });
+  });
+
+  it('omits blank search/filter values', async () => {
+    const services = operations();
+    const response = await request(createApp(services))
+      .get('/api/employees')
+      .query({ search: ' ', country: '', department: '\t', currency: ' ' });
+    expect(response.status).toBe(200);
+    expect(services.listEmployees).toHaveBeenCalledWith({ page: 1, pageSize: 25 });
+  });
+
+  for (const field of ['search', 'country', 'department', 'currency', 'sortBy', 'sortDirection']) {
+    it.each([`${field}=a&${field}=b`, `${field}[x]=a`])(
+      'rejects malformed directory query %s before retrieval',
+      async (query) => {
+        const services = operations();
+        const response = await request(createApp(services)).get(`/api/employees?${query}`);
+        expect(response.status).toBe(400);
+        expect(response.body).toEqual({ error: { field, code: 'invalid_query' } });
+        expect(services.listEmployees).not.toHaveBeenCalled();
+      },
+    );
+  }
+
+  it.each([
+    ['currency=JPY', 'currency', 'unsupported_currency'],
+    ['sortBy=toString', 'sortBy', 'invalid_query'],
+    ['sortDirection=sideways', 'sortDirection', 'invalid_query'],
+  ])('rejects invalid directory query %s before retrieval', async (query, field, code) => {
+    const services = operations();
+    const response = await request(createApp(services)).get(`/api/employees?${query}`);
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: { field, code } });
+    expect(services.listEmployees).not.toHaveBeenCalled();
+  });
+
   it('creates an employee and returns HTTP 201', async () => {
     const services = operations();
     const response = await request(createApp(services)).post('/api/employees').send(employee);

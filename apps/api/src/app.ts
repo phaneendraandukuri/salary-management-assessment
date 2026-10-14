@@ -4,12 +4,14 @@ import type { CreateEmployeeResult } from './create-employee.js';
 import type { EmployeePage } from './list-employees.js';
 import type { Pagination } from './pagination.js';
 import { parsePagination } from './pagination.js';
+import type { DirectoryCriteria } from './directory-query.js';
+import { parseDirectoryQuery } from './directory-query.js';
 import type { UpdateSalaryResult } from './update-salary.js';
 import type { SalaryHistoryResult } from './list-salary-history.js';
 
 export type EmployeeOperations = {
   createEmployee: (input: unknown) => Promise<CreateEmployeeResult>;
-  listEmployees: (pagination: Pagination) => Promise<EmployeePage>;
+  listEmployees: (query: Pagination & DirectoryCriteria) => Promise<EmployeePage>;
   updateSalary: (employeeId: string, amount: unknown) => Promise<UpdateSalaryResult>;
   listSalaryHistory: (employeeId: string, pagination: Pagination) => Promise<SalaryHistoryResult>;
 };
@@ -28,7 +30,14 @@ export function createApp(operations?: EmployeeOperations) {
         response.status(400).json({ error: pagination.error });
         return;
       }
-      response.json(await operations.listEmployees(pagination.pagination));
+      const directory = parseDirectoryQuery(request.query);
+      if (!directory.ok) {
+        response.status(400).json({ error: directory.error });
+        return;
+      }
+      response.json(
+        await operations.listEmployees({ ...pagination.pagination, ...directory.criteria }),
+      );
     });
     app.post('/api/employees', async (request, response) => {
       const result = await operations.createEmployee(request.body);

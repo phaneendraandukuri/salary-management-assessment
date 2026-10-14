@@ -12,7 +12,7 @@ if (!connectionString) {
 const pool = createPool(connectionString);
 const app = createApp({
   createEmployee: (input) => createEmployee(pool, input),
-  listEmployees: (pagination) => listEmployees(pool, pagination),
+  listEmployees: (query) => listEmployees(pool, query),
   updateSalary: (employeeId, amount) => updateSalary(pool, employeeId, amount),
   listSalaryHistory: (employeeId, pagination) => listSalaryHistory(pool, employeeId, pagination),
 });

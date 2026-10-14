@@ -193,3 +193,22 @@ The agreed `salary_unchanged` → HTTP 409 mapping belongs to Task 7B.
 - No cache, new dependencies, or client sorting. Counts/rows still inherit the API's concurrent
   write trade-off, and displayed timestamps retain its millisecond precision. The helper checks
   response shape rather than duplicating backend monetary or timestamp validation.
+
+## Backend directory criteria — Task 9A
+
+- Parse optional criteria separately from unchanged pagination validation. Search/filter strings
+  are trimmed and blanks omitted; sort values must match the allowlist exactly. Country and
+  department remain case-sensitive free-text matches. Currency uses the existing four codes.
+  Repeated/nested values return field-specific invalid_query; unsupported currency retains its
+  existing code. Unknown query parameters remain ignored, as before.
+- Extend the existing retrieval argument with optional DirectoryCriteria; no response fields
+  are added. Build one WHERE clause and parameter array shared by count and rows. Parenthesize
+  the name/email OR before combining exact filters with AND. ILIKE uses explicit ESCAPE '!':
+  prefix !, %, and _ with ! so user text is literal; backslash needs no escaping with this marker.
+- SQL sort expressions come only from a fixed mapping; direction becomes a fixed ASC/DESC token.
+  Object.hasOwn rejects inherited keys. Salary sorts on the original NUMERIC column, not the
+  text response alias; IDs break ties ascending. Other text ordering uses database collation.
+  Across currencies, amount sorting is nominal and does not imply equivalent purchasing power.
+- Keep simple scans and LIMIT/OFFSET for now. No new indexes/extensions are justified before
+  reproducible 10,000-row measurements. Counts/rows remain separate snapshots under concurrent
+  writes. Frontend controls, seeding, and performance verification belong to later increments.
