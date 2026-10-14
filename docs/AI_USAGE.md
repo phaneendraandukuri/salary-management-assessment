@@ -4,7 +4,8 @@
 
 OpenAI Codex assisted with reviewing the original assessment and project instructions,
 planning incremental delivery, refining `REQUIREMENTS.md`, and implementing the approved
-minimal repository bootstrap, annual salary validation, employee persistence, and create/list HTTP APIs. The candidate owns product
+minimal repository bootstrap, annual salary validation, employee persistence, create/list HTTP APIs,
+and the approved React employee directory. The candidate owns product
 decisions, reviews, and commits.
 
 Representative requests (summaries, not verbatim transcripts):
@@ -185,7 +186,46 @@ deployment is claimed.
 
 Counts/page rows use separate queries and can differ during concurrent writes. Salary values
 remain strings; numeric conversion is only for validated pagination and headcount metadata.
-Express 5 async error handling was checked against official documentation. Task 4 candidate
-review remains pending. No staging, commits, pushes, or deployment were performed. The
-candidate requested first React directory/creation integration after this increment is committed;
-that work has not started and still requires task approval.
+Express 5 async error handling was checked against official documentation. The candidate
+subsequently confirmed Task 4 verification, commit, and push (`613c9c2`) and reported manually
+checking the empty GET response against the development database. These are candidate-reported
+checks. Codex performed no staging, commits, pushes, or deployment.
+
+## Task 5 — React employee directory
+
+The candidate approved reading real employees only: loading, required columns, exact salary
+strings, empty/error states, Retry, Previous/Next pagination, and stale-request protection.
+Codex added one directory component, a small typed fetch helper, minimal CSS, the Vite dev
+proxy, and frontend-only testing dependencies. No backend behavior or business scope changed.
+
+Each cycle ran frontend tests before implementing its behavior:
+
+| Behavior | Actual Red evidence | Green evidence |
+| --- | --- | --- |
+| Initial loading | Missing accessible status message | 1 frontend test passed |
+| Employee fields/exact salary and empty directory | 2 failed: screen remained loading | 3 passed |
+| Network/HTTP/JSON errors and Retry | 3 failed: no error alert | 6 passed |
+| Next/Previous pagination | Next remained disabled for 26 employees | 7 passed |
+| Empty later page | Incorrect empty-directory message | 8 passed |
+| Stale success/failure | 2 failed: old response overwrote data; old failure replaced it with an alert | 10 passed |
+
+Refinement added presentation/accessibility and cleaned JSX formatting without introducing
+additional components or abstractions. Tooling configuration did not have an artificial TDD cycle.
+
+Codex manually verified Chrome against temporary API/Vite servers and an isolated private
+schema in `acme_test`: initial empty state, 26 synthetic records split 25/1 over pages 1/2,
+Previous/Next boundaries, exact `9007199254740993.01`, loading, an error after stopping the
+temporary API, and successful Retry after restarting it. Populating fixtures occurred only
+after the candidate explicitly approved the harness command. This was manual browser
+verification, separate from automated tests; it was not a 10,000-record seed or performance test.
+
+The harness received `stop`, stopped its servers, ended pools, and dropped its schema. Closing
+terminal input then allowed the harness process to exit 0. Follow-up checks found no listeners
+on its two ports, zero private test schemas, and zero other `acme_test` connections. The
+agent-created browser tab was closed. Development data and the candidate's API were untouched.
+A screenshot was saved outside the repository at `/private/tmp/acme-directory-page2.jpg`.
+
+Final validation by Codex: `npm test` passed 172 API tests (545 ms) and 10 frontend tests
+(1.77 s). The explicit `acme_test` integration command passed 52 tests (1.80 s). Type checking,
+linting, both builds, and `git diff --check` exited 0. Vite transformed 17 modules.
+Candidate review of Task 5 remains pending; Codex has not staged, committed, pushed, or deployed it.

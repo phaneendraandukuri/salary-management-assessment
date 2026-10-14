@@ -67,3 +67,22 @@ and normalization rules are deliberately deferred rather than silently imposed.
 - Require DATABASE_URL at startup; migrations remain explicit. Database connections are lazy,
   so `/health` remains liveness rather than readiness. SIGINT/SIGTERM closes the listener,
   drains active requests, and ends the pool; no forced shutdown deadline is introduced yet.
+
+## React employee directory — Task 5
+
+- One component owns the requested page and loading/error/loaded state. A discriminated union
+  makes employee data available only in the loaded state. A retry counter triggers a fresh
+  request for the same page; pagination is fixed at 25 rows with bounded Previous/Next buttons.
+- A small fetch helper uses relative `/api` URLs and local response types. Salary values are
+  displayed directly as strings. The JSON type assertion trusts our controlled API contract;
+  it does not perform runtime schema validation. Network, HTTP, and JSON parsing failures
+  produce a friendly error and Retry. A valid JSON response with a wrong shape is not validated.
+- Effect cleanup aborts obsolete requests. Both success and failure handlers check the signal
+  before updating state, including React StrictMode's development effect replay. The previous
+  table is replaced by loading during page changes, keeping visible rows consistent with the page.
+- Native table/buttons and minimal CSS avoid a UI library. Horizontal scrolling preserves the
+  seven required columns on narrow screens. Vitest/jsdom/Testing Library test user behavior;
+  controlled promises make loading and stale-request tests deterministic without PostgreSQL.
+- Vite's development proxy avoids local cross-origin configuration. Production must route
+  the same relative `/api` path to the backend during deployment. No production routing is
+  claimed here. Caching, URL-based page state, and employee creation are outside this increment.

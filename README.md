@@ -2,7 +2,8 @@
 
 Salary management for ACME's HR Manager. Product scope is in [REQUIREMENTS.md](REQUIREMENTS.md).
 The backend includes salary/employee validation, PostgreSQL employee creation, and paginated
-create/list HTTP APIs. The UI remains a placeholder.
+create/list HTTP APIs. The React directory displays real employees with loading, empty/error,
+retry, and pagination states. Employee creation through the UI remains pending.
 Salary updates/history, directory search/filter/sort, analytics, authentication, seeding, and deployment
 are not implemented yet.
 
@@ -30,6 +31,10 @@ npm run dev:web
   environment files are not automatically loaded by the current API startup configuration.
 - API startup requires `DATABASE_URL`. Migrations must be run explicitly before employee requests.
 - Vite automatically loads supported frontend environment files from `apps/web`.
+- In development, Vite proxies `/api` to `http://localhost:3000`. For a different API port,
+  use `API_PROXY_TARGET=http://localhost:3001 npm run dev:web` (a shell environment variable).
+  The UI uses relative `/api` URLs. Production hosting must route these requests to the API;
+  the development proxy does not configure production routing.
 - The health endpoint confirms the API can respond; it does not check database readiness.
 
 ## Checks and builds
@@ -41,9 +46,11 @@ npm run lint
 npm run build
 ```
 
-`npm test` and `npm run test:watch` run database-independent API tests only.
-There are no frontend tests in this increment;
-behavioral UI tests will accompany the approved workflows.
+`npm test` runs database-independent API and frontend behavioral tests.
+`npm run test:watch` watches API tests;
+`npm run test:watch --workspace @acme/web` watches frontend tests.
+Frontend tests use Vitest, jsdom, and React Testing Library with controlled fetch responses;
+real browser/API verification is a separate manual check.
 
 After building, `npm run start:api` starts the compiled API, and `npm run preview:web`
 serves the UI build locally. Vite preview is a local check, not a production hosting setup.
@@ -51,7 +58,7 @@ serves the UI build locally. Vite preview is a local check, not a production hos
 ## Structure
 
 - `apps/api/src/app.ts`: Express app factory and HTTP contracts; `server.ts`: pool/listener wiring.
-- `apps/web/src`: React entry point and placeholder screen.
+- `apps/web/src`: React entry point, employee directory, API helper, and behavioral tests.
 - `apps/api/src/employee.ts`, `create-employee.ts`: validation and one parameterized insert.
 - `apps/api/src/pagination.ts`, `list-employees.ts`: query validation and bounded retrieval.
 - `apps/api/migrations/001_employees.sql`: initial employee schema.
@@ -121,5 +128,5 @@ curl -i 'http://localhost:3000/api/employees?page=1&pageSize=25'
 ```
 
 Counts and page rows use separate queries, so concurrent writes can briefly make them differ.
-Authentication and frontend integration remain pending. On SIGINT/SIGTERM, the server stops
+Authentication remains pending. On SIGINT/SIGTERM, the server stops
 accepting requests, waits for active requests, and closes the pool.

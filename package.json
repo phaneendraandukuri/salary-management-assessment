@@ -13,7 +13,7 @@
   "scripts": {
     "dev:api": "npm run dev --workspace @acme/api",
     "dev:web": "npm run dev --workspace @acme/web",
-    "test": "npm run test --workspace @acme/api",
+    "test": "npm run test --workspaces",
     "test:watch": "npm run test:watch --workspace @acme/api",
     "test:integration": "npm run test:integration --workspace @acme/api",
     "db:migrate": "npm run db:migrate --workspace @acme/api",
