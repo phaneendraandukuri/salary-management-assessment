@@ -378,3 +378,22 @@ The agreed `salary_unchanged` → HTTP 409 mapping belongs to Task 7B.
   MemoryStore for ordinary HTTP tests, PostgreSQL for integration tests. Business assertions
   remain intact. The helper is excluded from production compilation. React login and safe
   diagnostics remain separate increments.
+
+## React session lifecycle — Task 13B
+
+- AuthGate checks the session before mounting App. Logout and current-session 401 unmount
+  App, discarding employee data, salary drafts, history and insights state. Login/remount
+  starts fresh; uncertain business writes are never replayed automatically.
+- A small React context supplies a fetch-compatible request function to all five protected
+  API helpers, including those that catch errors internally. A unique object identifies each
+  authenticated generation: a late response from a previous login cannot invalidate the
+  current one. Aborted reads do not trigger expiry. Existing read-effect cleanup still
+  prevents obsolete results, and no module-global notifier or fetching library is needed.
+- Session-check failures block access and offer Retry. Login uses an uncontrolled password
+  input, clears it on submission, and keeps credentials out of React state/browser storage.
+  Only the session cookie authenticates requests. An uncertain login offers explicit GET
+  session verification; logout remains blocked until an explicit Retry receives 204.
+- Unmounting cannot cancel a server-side write already in progress or guarantee immediate
+  erasure of temporary JavaScript references. The UI neither restores those references nor
+  retries the write; HR must check persisted records before resubmitting. Hosted cookie and
+  proxy verification remains deployment work.

@@ -1,3 +1,4 @@
+import { useApiRequest } from './api-context';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import type { Employee } from './employee-api';
@@ -23,6 +24,7 @@ const errorMessages: Record<string, string> = {
 };
 
 export function SalaryEditForm({ employee, onCancel, onSaved, onSavingChange }: Props) {
+  const apiRequest = useApiRequest();
   const [amount, setAmount] = useState(employee.salaryAmount);
   const [currentSalary, setCurrentSalary] = useState(employee.salaryAmount);
   const [state, setState] = useState<SaveState>({ status: 'idle' });
@@ -34,7 +36,7 @@ export function SalaryEditForm({ employee, onCancel, onSaved, onSavingChange }: 
     if (saving) return;
     setState({ status: 'saving' });
     onSavingChange(true);
-    const result = await patchSalary(employee.employeeId, amount);
+    const result = await patchSalary(employee.employeeId, amount, apiRequest);
     onSavingChange(false);
     if (!result.ok) {
       setState({

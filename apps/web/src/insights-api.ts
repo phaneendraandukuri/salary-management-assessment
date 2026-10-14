@@ -21,11 +21,12 @@ export type InsightsData = {
 export async function getInsights(
   criteria: InsightsCriteria,
   signal: AbortSignal,
+  apiRequest: typeof fetch = fetch,
 ): Promise<InsightsData> {
   const params = new URLSearchParams({ groupBy: criteria.groupBy });
   for (const field of ['country', 'department'] as const)
     if (criteria[field].trim()) params.set(field, criteria[field].trim());
-  const response = await fetch(`/api/compensation-insights?${params}`, { signal });
+  const response = await apiRequest(`/api/compensation-insights?${params}`, { signal });
   if (!response.ok) throw new Error('Insights request failed');
   const data = (await response.json()) as InsightsData;
   if (

@@ -1,3 +1,4 @@
+import { useApiRequest } from './api-context';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { postEmployee } from './employee-api';
@@ -29,6 +30,7 @@ type FormState =
   | { status: 'error'; message: string; field?: string };
 
 export function EmployeeCreationForm({ onCreated }: { onCreated: () => void }) {
+  const apiRequest = useApiRequest();
   const [state, setState] = useState<FormState>({ status: 'idle' });
   const submitting = state.status === 'submitting';
   const error = state.status === 'error' ? state : undefined;
@@ -40,7 +42,7 @@ export function EmployeeCreationForm({ onCreated }: { onCreated: () => void }) {
     // This fixed form contains only the eight named string-valued employee controls.
     const employee = Object.fromEntries(new FormData(form)) as Employee;
     setState({ status: 'submitting' });
-    const result = await postEmployee(employee);
+    const result = await postEmployee(employee, apiRequest);
     if (!result.ok) {
       const field = textFields.find((field) => field.name === result.error.field);
       const message =

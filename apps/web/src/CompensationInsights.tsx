@@ -1,3 +1,4 @@
+import { useApiRequest } from './api-context';
 import { useEffect, useState } from 'react';
 import { getInsights } from './insights-api';
 import type { InsightsCriteria, InsightsData } from './insights-api';
@@ -8,6 +9,7 @@ type InsightsState =
   | { status: 'error'; request: InsightsRequest; version: number }
   | { status: 'loaded'; data: InsightsData; request: InsightsRequest; version: number };
 export function CompensationInsights({ refreshVersion = 0 }: { refreshVersion?: number }) {
+  const apiRequest = useApiRequest();
   const [request, setRequest] = useState<InsightsRequest>({ criteria: defaults, attempt: 0 });
   const [draft, setDraft] = useState(defaults);
   const [state, setState] = useState<InsightsState>({ status: 'loading' });
@@ -18,7 +20,7 @@ export function CompensationInsights({ refreshVersion = 0 }: { refreshVersion?: 
   const data = current.status === 'loaded' ? current.data : null;
   useEffect(() => {
     const controller = new AbortController();
-    void getInsights(request.criteria, controller.signal)
+    void getInsights(request.criteria, controller.signal, apiRequest)
       .then((data) => {
         if (!controller.signal.aborted)
           setState({ status: 'loaded', data, request, version: refreshVersion });
@@ -28,7 +30,7 @@ export function CompensationInsights({ refreshVersion = 0 }: { refreshVersion?: 
           setState({ status: 'error', request, version: refreshVersion });
       });
     return () => controller.abort();
-  }, [request, refreshVersion]);
+  }, [request, refreshVersion, apiRequest]);
   function apply(criteria: InsightsCriteria) {
     setRequest((current) => ({
       criteria: {

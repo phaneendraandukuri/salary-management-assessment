@@ -1,3 +1,4 @@
+import { useApiRequest } from './api-context';
 import { useEffect, useState } from 'react';
 import type { Employee, SalaryHistoryPage } from './employee-api';
 import { getSalaryHistory } from './employee-api';
@@ -8,18 +9,21 @@ type HistoryState =
   | { status: 'error'; missing: boolean };
 
 export function SalaryHistory({ employee, onClose }: { employee: Employee; onClose: () => void }) {
+  const apiRequest = useApiRequest();
   const [state, setState] = useState<HistoryState>({ status: 'loading' });
   const [request, setRequest] = useState({ page: 1, attempt: 0 });
   const data = state.status === 'loaded' ? state.data : null;
   useEffect(() => {
     const controller = new AbortController();
-    void getSalaryHistory(employee.employeeId, request.page, controller.signal).then((result) => {
-      if (controller.signal.aborted) return;
-      if (result.ok) setState({ status: 'loaded', data: result.data });
-      else setState({ status: 'error', missing: result.error === 'employee_not_found' });
-    });
+    void getSalaryHistory(employee.employeeId, request.page, controller.signal, apiRequest).then(
+      (result) => {
+        if (controller.signal.aborted) return;
+        if (result.ok) setState({ status: 'loaded', data: result.data });
+        else setState({ status: 'error', missing: result.error === 'employee_not_found' });
+      },
+    );
     return () => controller.abort();
-  }, [employee.employeeId, request]);
+  }, [employee.employeeId, request, apiRequest]);
 
   function loadPage(page: number) {
     setState({ status: 'loading' });

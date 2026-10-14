@@ -791,3 +791,52 @@ loading instructions were corrected using evidence from the prior local setup tr
 The candidate must add the non-secret APP_ORIGIN setting to their private local configuration;
 Codex did not modify that file. React login and safe diagnostics remain separate work. Candidate
 review is pending; no staging, commit, push, cloud access or subsequent task was performed.
+
+## Task 13B — React HR login and session lifecycle
+
+Codex implemented the approved frontend session gate, login/logout feedback, and minimal
+protected-helper wiring. No backend, dependency, credential configuration or migration changed.
+The candidate's review and independent verification of this increment are still pending.
+
+Behavioral Red evidence: four initial session-gate tests failed because protected workflows
+mounted before session confirmation and login/retry were absent; six login tests failed for
+missing submission/error/uncertain-login behavior; four logout tests failed for missing logout.
+A restore fixture initially returned auth-shaped data to the directory and was corrected.
+The initial native form stub also produced jsdom's unsupported requestSubmit message; that
+tooling message was not counted as behavioral evidence.
+
+Seven of eight protected-helper tests then failed because 401 did not return to login or permit
+reauthentication. Adding shared handling made those pass but exposed the eighth test's stale
+401 race: an old request invalidated the newer login. Per-login generation checks made all
+eight pass. Final focused coverage comprises 22 new tests; the existing 115 frontend tests
+remain regression coverage. Refactoring stayed limited to the shared request context and
+fetch-compatible helper arguments, with no business assertions rewritten.
+
+Manual browser verification used native Chrome controls, real Vite/Express and PostgreSQL
+sessions in a private schema of local acme_test, with temporary synthetic credentials. It
+confirmed login, session restoration after refresh, employee creation, salary editing from
+9007199254740993.01 to 9007199254740994.01, exact history/UTC timestamps, and currency-separated
+insights. A harness-only 503 logout failure removed protected content while retaining one
+stored session and showing explicit Retry; recovery/retry completed logout. Expiring only
+the isolated stored session made the next insights request return to login. Reauthentication
+showed fresh forms and closed panels; counts remained three employees and one history row.
+Final logout and refresh showed login, with zero sessions before cleanup.
+
+Browser setup first encountered CDP and alternate-loopback navigation timeouts; native
+controls on 127.0.0.1 completed verification. An early non-interactive harness exit left a
+private test schema, which was explicitly removed. Final normal shutdown closed temporary
+servers/stores/pools and removed the test schema and private credential metadata. Independent
+checks found zero browser-test schemas, no metadata file, and no Vite listener. The private
+verification window was closed. No development database or Neon/Render resource was used;
+no credentials, hashes, cookies or secrets were printed. Hosted verification remains pending.
+
+Final validation passed: npm test ran 429 backend tests (11.10 s) and 137 frontend tests
+(7.53 s); isolated acme_test integration ran 158 tests (16.67 s). Prettier check, both
+workspace type checks, lint, both builds and git diff --check passed. No staging, commit,
+push, deployment or subsequent task was performed.
+
+Screenshot review caught missing grid styling in the new login form. Codex corrected only
+its CSS and verified the rendered layout in a second isolated browser harness, then closed
+the window and shut that harness down normally. Format check, both builds (including type
+checks) and diff check passed again after the CSS correction; behavioral tests were not
+repeated for that styling-only change.

@@ -1,3 +1,4 @@
+import { useApiRequest } from './api-context';
 import { useEffect, useState } from 'react';
 import { getEmployeePage } from './employee-api';
 import type { Employee, EmployeePage } from './employee-api';
@@ -29,6 +30,7 @@ type DirectoryState =
   { status: 'loading' } | { status: 'error' } | { status: 'loaded'; data: EmployeePage };
 
 export function App() {
+  const apiRequest = useApiRequest();
   const [showInsights, setShowInsights] = useState(false);
   const [insightsVersion, setInsightsVersion] = useState(0);
   const [request, setRequest] = useState({ page: 1, criteria: defaultCriteria, attempt: 0 });
@@ -49,7 +51,7 @@ export function App() {
   );
   useEffect(() => {
     const controller = new AbortController();
-    void getEmployeePage(request.page, controller.signal, request.criteria)
+    void getEmployeePage(request.page, controller.signal, request.criteria, apiRequest)
       .then((data) => {
         if (!controller.signal.aborted) setState({ status: 'loaded', data });
       })
@@ -57,7 +59,7 @@ export function App() {
         if (!controller.signal.aborted) setState({ status: 'error' });
       });
     return () => controller.abort();
-  }, [request]);
+  }, [request, apiRequest]);
 
   function loadPage(page: number) {
     setState({ status: 'loading' });

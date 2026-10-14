@@ -235,10 +235,10 @@ This applies to history pagination as well as the directory. Salary update trans
 but a lost connection during commit can leave the caller uncertain; do not retry automatically.
 All employee APIs above require an authenticated session; writes additionally require the
 exact configured Origin. A bare curl request to the directory now returns 401.
-React login remains pending. On SIGINT/SIGTERM, the server stops
+On SIGINT/SIGTERM, the server stops
 accepting requests, waits for active requests, closes the session store, and closes the pool.
 
-## HR authentication (React login and hosted verification pending)
+## HR authentication (hosted verification pending)
 
 Choose one HR username and a strong unique demo password (at least 12 characters). Generate
 the hash interactively; password entry is hidden and the command refuses piped input:
@@ -295,4 +295,13 @@ protected with their existing authenticated contracts; all API responses use no-
 Session loading/renewal failures prevent business execution and return sanitized errors.
 Lifecycle changes serialize per session within one process and reload current data, preventing
 stale renewal overwrites or restoration after logout. This is not distributed coordination.
-React login, safe diagnostics and actual deployment verification remain separate work.
+The React UI checks the current session before mounting any protected workflow. Login and
+refresh restore access using same-origin cookies; no tokens are stored in browser storage.
+Logout immediately clears protected UI state. If its response fails or is uncertain, the UI
+keeps that state unmounted, reports unconfirmed server-side logout, and offers explicit Retry.
+Any current protected API's 401 returns to login; obsolete requests cannot expire a newer
+login. Reauthentication starts with fresh forms, filters and panels. Interrupted employee
+creation or salary updates are never automatically replayed: check persisted records first.
+Session checks and login failures have separate feedback/retry; uncertain login offers a
+session check without retrying the login POST. Password inputs clear on submission.
+Safe diagnostics and actual deployment verification remain separate work.

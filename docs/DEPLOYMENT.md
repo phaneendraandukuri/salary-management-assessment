@@ -3,7 +3,7 @@
 Selected approach: one Render Free Node web service serves Express and the React build;
 Neon Free stores PostgreSQL data. No cloud resources or deployment have been verified yet.
 Backend API protection, origin checks, throttling and expiry enforcement are implemented.
-Complete React login integration and safe diagnostics before exposure. Actual Render proxy,
+React login integration is implemented; complete safe diagnostics before exposure. Actual Render proxy,
 TLS/cookie and Neon connectivity verification remain deployment prerequisites, not completed
 checks. Cloud verification is still pending.
 
@@ -69,7 +69,7 @@ depending on those features. Test suites continue using isolated acme_test, neve
 After an explicitly authorized deployment, verify HTTPS /, JS/CSS assets, /health, and real
 directory/create/salary/history workflows with synthetic data. Unknown /api paths and missing
 assets must return 404. The same origin handles /api; no Vite preview/proxy or CORS setup is used.
-Verify authentication once implemented, logs without secrets, and a first request after idle.
+Verify login, refresh restoration, logout, expiry, logs without secrets, and a first request after idle.
 
 Render Free sleeps after 15 minutes and may take about a minute to wake. Neon Free scales to
 zero after five minutes; its wake-up adds latency and may challenge the current five-second

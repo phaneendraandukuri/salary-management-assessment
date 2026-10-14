@@ -29,6 +29,7 @@ export async function getEmployeePage(
   page: number,
   signal: AbortSignal,
   criteria: DirectoryCriteria = {},
+  apiRequest: typeof fetch = fetch,
 ): Promise<EmployeePage> {
   const params = new URLSearchParams({ page: String(page), pageSize: '25' });
   for (const [field, raw] of Object.entries(criteria)) {
@@ -41,7 +42,7 @@ export async function getEmployeePage(
       continue;
     params.set(field, value);
   }
-  const response = await fetch(`/api/employees?${params}`, { signal });
+  const response = await apiRequest(`/api/employees?${params}`, { signal });
   if (!response.ok) throw new Error('Unable to load employees');
   return response.json() as Promise<EmployeePage>;
 }
@@ -49,9 +50,12 @@ export async function getEmployeePage(
 export type EmployeeCreationResult =
   { ok: true; employeeId: string } | { ok: false; error: { code: string; field?: string } };
 
-export async function postEmployee(employee: Employee): Promise<EmployeeCreationResult> {
+export async function postEmployee(
+  employee: Employee,
+  apiRequest: typeof fetch = fetch,
+): Promise<EmployeeCreationResult> {
   try {
-    const response = await fetch('/api/employees', {
+    const response = await apiRequest('/api/employees', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(employee),
@@ -88,9 +92,10 @@ export type SalaryUpdateResult =
 export async function patchSalary(
   employeeId: string,
   salaryAmount: string,
+  apiRequest: typeof fetch = fetch,
 ): Promise<SalaryUpdateResult> {
   try {
-    const response = await fetch(`/api/employees/${encodeURIComponent(employeeId)}/salary`, {
+    const response = await apiRequest(`/api/employees/${encodeURIComponent(employeeId)}/salary`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ salaryAmount }),
@@ -149,9 +154,10 @@ export async function getSalaryHistory(
   employeeId: string,
   page: number,
   signal: AbortSignal,
+  apiRequest: typeof fetch = fetch,
 ): Promise<SalaryHistoryResult> {
   try {
-    const response = await fetch(
+    const response = await apiRequest(
       `/api/employees/${encodeURIComponent(employeeId)}/salary-history?page=${page}&pageSize=25`,
       { signal },
     );
