@@ -57,3 +57,48 @@ export async function postEmployee(employee: Employee): Promise<EmployeeCreation
     return { ok: false, error: { code: 'creation_uncertain' } };
   }
 }
+
+export type SalaryUpdateResult =
+  { ok: true; salaryAmount: string } | { ok: false; error: { code: string; field?: string } };
+
+export async function patchSalary(
+  employeeId: string,
+  salaryAmount: string,
+): Promise<SalaryUpdateResult> {
+  try {
+    const response = await fetch(`/api/employees/${encodeURIComponent(employeeId)}/salary`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ salaryAmount }),
+    });
+    if (response.status === 200) {
+      const data = (await response.json()) as {
+        employee?: { employeeId?: unknown; salaryAmount?: unknown };
+      };
+      if (
+        data?.employee?.employeeId !== employeeId ||
+        typeof data.employee.salaryAmount !== 'string' ||
+        data.employee.salaryAmount === ''
+      ) {
+        return { ok: false, error: { code: 'update_uncertain' } };
+      }
+      return { ok: true, salaryAmount: data.employee.salaryAmount };
+    }
+    if ([400, 404, 409, 500].includes(response.status)) {
+      const data = (await response.json().catch(() => undefined)) as
+        { error?: { code?: unknown; field?: unknown } } | undefined;
+      if (typeof data?.error?.code === 'string') {
+        return {
+          ok: false,
+          error: {
+            code: data.error.code,
+            field: typeof data.error.field === 'string' ? data.error.field : undefined,
+          },
+        };
+      }
+    }
+    return { ok: false, error: { code: 'request_failed' } };
+  } catch {
+    return { ok: false, error: { code: 'update_uncertain' } };
+  }
+}

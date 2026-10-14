@@ -361,3 +361,43 @@ type checks, lint, both builds, and `git diff --check` passed. Frontend assets a
 Final metadata checks found zero private test schemas and zero other acme_test connections.
 Candidate review remains pending; no staging, commits, pushes, deployment, or work on another
 task was performed by Codex.
+
+## Task 8A — React salary editing
+
+The candidate confirmed Task 7B review, commit, and push and authorized salary editing only,
+including cancel/reopen and employee-switch safeguards. Codex added a separate form, a small
+PATCH helper, minimal App callbacks/styles, behavioral tests, and documentation. No backend,
+migration, dependency, history viewer, or unrelated component restructuring changed.
+
+| Behavior | Actual Red evidence | Green evidence |
+| --- | --- | --- |
+| Exact initial salary | Expected salary string, received empty input | 29 frontend tests passed |
+| Open/cancel/reopen | Missing employee edit action | 30 passed |
+| Switch employee state | Employee B retained A's unsaved 123.45 instead of 200.00 | 31 passed |
+| Exact PATCH and encoded ID | Fetch never called | 32 passed |
+| Pending controls and confirmed save | 3 failed: switching allowed; missing saving/success states | 35 passed |
+| Validation/conflict/failure/uncertainty | 13 failed: no alerts, escaped response errors, or false success | 49 passed |
+
+Native required-input validation passed immediately and is regression coverage. Two App tests
+for current-page refresh and confirmed success despite refresh failure passed using the earlier
+save callback; they are regression coverage, not independent Red cycles (51 frontend tests).
+The error Red run included 11 uncaught behavioral response failures; those are resolved in Green.
+Refinement applied consistent formatting and shared existing form styles without a new library.
+
+Manual Chrome verification used temporary API/Vite servers and a fresh private acme_test schema
+with 26 synthetic fixtures: switch employees without carrying input, cancel/reopen reset, zero
+salary rejection with retained input, page-2 save of 009007199254740993.01 as exact
+9007199254740993.01 in unchanged USD currency, normalized input/current amount and refreshed
+page-2 row, unchanged conflict, and API-down failure with retained values and enabled Save.
+Pending controls, uncertain fetch outcomes, and post-success refresh failure were automated
+checks; they were not manually reproduced. Screenshot: `/private/tmp/acme-salary-edit.png`.
+
+The browser tab closed; the harness received stop, completed cleanup, and exited 0 after terminal
+input closed. Neither temporary port remained listening; metadata checks found zero private
+test schemas and zero other acme_test connections. Development data and the candidate API were
+untouched. Final `npm test` passed 201 API tests (399 ms) and 51 frontend tests (5.18 s).
+The explicit isolated PostgreSQL integration suite passed 105 tests (2.17 s). Type checks,
+lint, both builds, and diff checks passed; Vite transformed 19 modules. The first final format
+check identified the new form test file; a second formatting pass resolved it and format:check
+passed. Frontend tests were rerun afterward and all 51 passed. Candidate review remains pending;
+Codex has not staged, committed, pushed, deployed, or started Task 8B.

@@ -224,3 +224,114 @@ it.each([false, true])(
     expect(screen.getByText('Page 2')).toBeInTheDocument();
   },
 );
+
+it('opens the selected salary and discards unsaved input on cancel/reopen without PATCH', async () => {
+  const fetchMock = vi.fn().mockResolvedValue(jsonResponse());
+  vi.stubGlobal('fetch', fetchMock);
+  render(<App />);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole('button', { name: 'Edit salary for ACME-001' }));
+  const input = screen.getByRole('textbox', { name: 'New annual salary' });
+  expect(input).toHaveValue(employee.salaryAmount);
+  await user.clear(input);
+  await user.type(input, '123.45');
+  await user.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.queryByRole('form', { name: 'Edit salary' })).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Edit salary for ACME-001' }));
+  expect(screen.getByRole('textbox', { name: 'New annual salary' })).toHaveValue(
+    employee.salaryAmount,
+  );
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
+it('switching employees before submission resets the editor to the selected employee salary', async () => {
+  const second = {
+    ...employee,
+    employeeId: 'ACME-002',
+    name: 'Second Employee',
+    currency: 'EUR',
+    salaryAmount: '200.00',
+  };
+  const fetchMock = vi.fn().mockResolvedValue(jsonResponse([employee, second]));
+  vi.stubGlobal('fetch', fetchMock);
+  render(<App />);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole('button', { name: 'Edit salary for ACME-001' }));
+  const input = screen.getByRole('textbox', { name: 'New annual salary' });
+  await user.clear(input);
+  await user.type(input, '123.45');
+  await user.click(screen.getByRole('button', { name: 'Edit salary for ACME-002' }));
+  expect(
+    screen.getByRole('heading', { name: 'Edit salary for Second Employee (ACME-002)' }),
+  ).toBeInTheDocument();
+  expect(screen.getByText('Currency: EUR')).toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: 'New annual salary' })).toHaveValue(
+    second.salaryAmount,
+  );
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
+it('prevents switching employees while saving', async () => {
+  const second = {
+    ...employee,
+    employeeId: 'ACME-002',
+    name: 'Second Employee',
+    salaryAmount: '200.00',
+  };
+  let resolve!: (response: Response) => void;
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse([employee, second]))
+      .mockReturnValueOnce(
+        new Promise<Response>((done) => {
+          resolve = done;
+        }),
+      )
+      .mockResolvedValueOnce(jsonResponse([employee, second])),
+  );
+  render(<App />);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole('button', { name: 'Edit salary for ACME-001' }));
+  await user.click(screen.getByRole('button', { name: 'Save salary' }));
+  expect(screen.getByRole('button', { name: 'Edit salary for ACME-002' })).toBeDisabled();
+  await user.click(screen.getByRole('button', { name: 'Edit salary for ACME-002' }));
+  expect(
+    screen.getByRole('heading', { name: 'Edit salary for Alex Example (ACME-001)' }),
+  ).toBeInTheDocument();
+  await act(async () => {
+    resolve(new Response(JSON.stringify({ employee }), { status: 200 }));
+  });
+});
+
+it.each([false, true])(
+  'refreshes the selected page after a salary save; refresh failure=%s',
+  async (refreshFails) => {
+    const saved = { ...employee, salaryAmount: '100.50' };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse([employee], 26))
+      .mockResolvedValueOnce(jsonResponse([employee], 26, 2))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ employee: saved }), { status: 200 }));
+    if (refreshFails) fetchMock.mockRejectedValueOnce(new Error('Refresh failed'));
+    else fetchMock.mockResolvedValueOnce(jsonResponse([saved], 26, 2));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<App />);
+    const user = userEvent.setup();
+    await screen.findByRole('table');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(await screen.findByRole('button', { name: 'Edit salary for ACME-001' }));
+    const input = screen.getByRole('textbox', { name: 'New annual salary' });
+    await user.clear(input);
+    await user.type(input, '00100.5');
+    await user.click(screen.getByRole('button', { name: 'Save salary' }));
+    expect(await screen.findByText('Salary updated for ACME-001: INR 100.50.')).toBeInTheDocument();
+    if (refreshFails) {
+      expect(await screen.findByRole('alert')).toHaveTextContent('Unable to load employees');
+      expect(screen.getByText('Salary updated for ACME-001: INR 100.50.')).toBeInTheDocument();
+    } else expect(await screen.findByRole('cell', { name: '100.50' })).toBeInTheDocument();
+    expect(fetchMock.mock.calls[3][0]).toBe('/api/employees?page=2&pageSize=25');
+    expect(screen.getByText('Page 2')).toBeInTheDocument();
+  },
+);

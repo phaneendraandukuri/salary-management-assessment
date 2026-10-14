@@ -164,7 +164,8 @@ button:disabled {
   }
 }
 
-.creation-form {
+.creation-form,
+.salary-edit-form {
   padding: 24px;
   margin-bottom: 24px;
   background: white;
@@ -172,15 +173,19 @@ button:disabled {
   border-radius: 12px;
 }
 .creation-form > p,
-#salary-guidance {
+.salary-edit-form > p,
+#salary-guidance,
+#salary-edit-guidance {
   color: #526276;
   font-size: 14px;
   line-height: 1.6;
 }
-.creation-form [role='alert'] {
+.creation-form [role='alert'],
+.salary-edit-form [role='alert'] {
   color: #932d2d;
 }
-.creation-form fieldset {
+.creation-form fieldset,
+.salary-edit-form fieldset {
   padding: 0;
   margin: 0;
   border: 0;
@@ -220,4 +225,12 @@ button:disabled {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+.salary-edit-form .creation-fields {
+  max-width: 400px;
+}
+.salary-edit-actions {
+  display: flex;
+  gap: 12px;
 }

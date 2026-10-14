@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getEmployeePage } from './employee-api';
-import type { EmployeePage } from './employee-api';
+import type { Employee, EmployeePage } from './employee-api';
 import { EmployeeCreationForm } from './EmployeeCreationForm';
+import { SalaryEditForm } from './SalaryEditForm';
 import './App.css';
 
 type DirectoryState =
@@ -10,6 +11,8 @@ type DirectoryState =
 export function App() {
   const [request, setRequest] = useState({ page: 1, attempt: 0 });
   const [state, setState] = useState<DirectoryState>({ status: 'loading' });
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [savingSalary, setSavingSalary] = useState(false);
   const data = state.status === 'loaded' ? state.data : null;
   useEffect(() => {
     const controller = new AbortController();
@@ -43,6 +46,15 @@ export function App() {
         </p>
       </header>
       <EmployeeCreationForm onCreated={refreshDirectory} />
+      {editingEmployee && (
+        <SalaryEditForm
+          key={editingEmployee.employeeId}
+          employee={editingEmployee}
+          onSaved={refreshDirectory}
+          onCancel={() => setEditingEmployee(null)}
+          onSavingChange={setSavingSalary}
+        />
+      )}
       <section className="directory-card" aria-labelledby="directory-heading">
         <div className="directory-heading">
           <h2 id="directory-heading">Employee directory</h2>
@@ -85,7 +97,10 @@ export function App() {
                   <th scope="col">Role</th>
                   <th scope="col">Country</th>
                   <th scope="col">Currency</th>
-                  <th scope="col">Annual base salary</th>
+                  <th scope="col" className="salary">
+                    Annual base salary
+                  </th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -98,6 +113,15 @@ export function App() {
                     <td>{employee.country}</td>
                     <td>{employee.currency}</td>
                     <td className="salary">{employee.salaryAmount}</td>
+                    <td>
+                      <button
+                        disabled={savingSalary}
+                        aria-label={`Edit salary for ${employee.employeeId}`}
+                        onClick={() => setEditingEmployee(employee)}
+                      >
+                        Edit salary
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

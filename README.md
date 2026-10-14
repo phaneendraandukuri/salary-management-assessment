@@ -7,8 +7,11 @@ retry, and pagination states. A separate form creates employees, confirms succes
 the current directory page. Failed submissions retain entered values; uncertain network failures
 ask you to check the directory before resubmitting. Employee-ID ordering means a new record may
 appear on another page.
-Transactional salary updates and paginated history are available through the API; their UI
-remains pending. Directory search/filter/sort, analytics, authentication, seeding, and
+Salary editing is available from directory rows: select Edit salary, enter an annual amount,
+and save in the existing currency. Confirmed saves refresh the current page. Cancel discards
+unsaved input; selecting another employee starts a fresh editor. Uncertain updates are not
+automatically retried. Paginated history is available through the API; its viewer remains pending.
+Directory search/filter/sort, analytics, authentication, seeding, and
 deployment are not implemented yet.
 
 ## Local setup
@@ -120,7 +123,7 @@ To stop the local database when finished: `brew services stop postgresql@18`.
 
 Salary persistence uses the employee's existing currency and exact decimal strings. A row lock
 serializes edits; salary and history commit together. Unchanged normalized amounts return
-`salary_unchanged` without history. The salary editor/history browser workflow remains pending.
+`salary_unchanged` without history. The history browser workflow remains pending.
 
 ## Employee HTTP API
 

@@ -156,3 +156,23 @@ The agreed `salary_unchanged` → HTTP 409 mapping belongs to Task 7B.
 - Database-independent Supertest tests cover contracts/mappings and guard unwanted persistence
   calls. Isolated PostgreSQL tests cover exact values, large IDs, timestamp ties, page boundaries,
   employee isolation, and actual update-to-history/error behavior. No new dependencies or schemas.
+
+## React salary editor — Task 8A
+
+- One selected employee snapshot opens a separate SalaryEditForm panel. Key it by employee ID:
+  changing selection remounts local state instead of retaining the previous employee's unsaved
+  amount. Cancel unmounts it, so reopening starts from the directory's current value. Pending
+  saves disable input, Save/Cancel, and all employee edit actions; no PATCH is cancelled mid-save.
+- Keep editable/current confirmed salary as strings. The helper encodes the employee ID and
+  sends only salaryAmount. A successful response must identify that employee and provide a
+  nonempty string amount; the controlled backend remains responsible for its monetary validity.
+  Currency is displayed from the employee and remains fixed by the existing backend operation.
+- Local save state is independent of directory loading/error state. On confirmation, show the
+  returned normalized amount and refresh the current page using the existing callback. The
+  directory is not optimistically changed. Refresh failure cannot turn a confirmed save into a
+  failed update. The form's Close action after success closes feedback; it does not undo the save.
+- Retain rejected input and distinguish amount/storage validation, unchanged conflict, missing
+  employee, general failure, and uncertain network/unusable-success outcomes. Preserve API error
+  fields for input feedback. No automatic retry; no stale-version check or new concurrency rule.
+- Native controls, scoped styles, local types, and callbacks keep this incremental. Creation
+  behavior is unchanged; history viewing remains a separate increment.
