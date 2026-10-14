@@ -24,7 +24,8 @@
     "build": "npm run build --workspaces",
     "start:api": "npm run start --workspace @acme/api",
     "preview:web": "npm run preview --workspace @acme/web",
-    "db:seed": "npm run db:seed --workspace @acme/api"
+    "db:seed": "npm run db:seed --workspace @acme/api",
+    "auth:hash": "npm run auth:hash --workspace @acme/api --"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

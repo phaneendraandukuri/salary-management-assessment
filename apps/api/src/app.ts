@@ -1,4 +1,5 @@
 import express from 'express';
+import { authRouter, type AuthOptions } from './auth.js';
 import type { CompensationInsights } from './compensation-insights.js';
 import type { InsightsQuery } from './insights-query.js';
 import { parseInsightsQuery } from './insights-query.js';
@@ -21,12 +22,17 @@ export type EmployeeOperations = {
   listSalaryHistory: (employeeId: string, pagination: Pagination) => Promise<SalaryHistoryResult>;
 };
 
-export function createApp(operations?: EmployeeOperations, frontendDirectory?: string) {
+export function createApp(
+  operations?: EmployeeOperations,
+  frontendDirectory?: string,
+  auth?: AuthOptions,
+) {
   const app = express();
   app.set('query parser', 'extended');
   app.get('/health', (_request, response) => {
     response.json({ status: 'ok' });
   });
+  if (auth) app.use('/api/auth', authRouter(auth));
   if (operations) {
     app.use(express.json({ limit: '1mb' }));
     app.get('/api/compensation-insights', async (request, response) => {

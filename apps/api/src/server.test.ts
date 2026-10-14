@@ -5,10 +5,16 @@ const mocks = vi.hoisted(() => ({
   pool: { end: vi.fn() },
   config: vi.fn().mockReturnValue({ port: 1234, frontendDirectory: '/built-ui' }),
   app: vi.fn(),
+  credentials: { username: 'hr', passwordHash: '', sessionSecret: '' },
+  store: { close: vi.fn() },
 }));
 vi.mock('./app.js', () => ({ createApp: mocks.app }));
 vi.mock('./database.js', () => ({ createPool: vi.fn().mockReturnValue(mocks.pool) }));
 vi.mock('./startup-config.js', () => ({ startupConfig: mocks.config }));
+vi.mock('./hr-credentials.js', () => ({
+  credentialConfig: vi.fn().mockReturnValue(mocks.credentials),
+}));
+vi.mock('./session-store.js', () => ({ createSessionStore: vi.fn().mockReturnValue(mocks.store) }));
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
@@ -21,6 +27,10 @@ it('uses validated configuration, supplies the production build, and binds all I
   vi.spyOn(process, 'once').mockReturnValue(process);
   await import('./server.js');
   expect(mocks.config).toHaveBeenCalledWith(process.env);
-  expect(mocks.app).toHaveBeenCalledWith(expect.any(Object), '/built-ui');
+  expect(mocks.app).toHaveBeenCalledWith(expect.any(Object), '/built-ui', {
+    credentials: mocks.credentials,
+    store: mocks.store,
+    production: false,
+  });
   expect(mocks.listen).toHaveBeenCalledWith(1234, '0.0.0.0', expect.any(Function));
 });

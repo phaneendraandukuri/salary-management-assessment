@@ -6,13 +6,17 @@ import { createEmployee } from './create-employee.js';
 import { listEmployees } from './list-employees.js';
 import { updateSalary } from './update-salary.js';
 import { listSalaryHistory } from './list-salary-history.js';
+import { credentialConfig } from './hr-credentials.js';
+import { createSessionStore } from './session-store.js';
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
   throw new Error('DATABASE_URL is required to start the API');
 }
 const { port, frontendDirectory } = startupConfig(process.env);
+const credentials = credentialConfig(process.env);
 const pool = createPool(connectionString);
+const sessionStore = createSessionStore(pool);
 const app = createApp(
   {
     compensationInsights: (query) => compensationInsights(pool, query),
@@ -22,6 +26,7 @@ const app = createApp(
     listSalaryHistory: (employeeId, pagination) => listSalaryHistory(pool, employeeId, pagination),
   },
   frontendDirectory,
+  { credentials, store: sessionStore, production: process.env.NODE_ENV === 'production' },
 );
 
 const server = app.listen(port, '0.0.0.0', () => {
@@ -37,6 +42,7 @@ function shutdown() {
   server.close(async (error) => {
     if (error) process.exitCode = 1;
     try {
+      await sessionStore.close();
       await pool.end();
     } catch {
       console.error('Database shutdown failed');

@@ -2,7 +2,10 @@
 
 Selected approach: one Render Free Node web service serves Express and the React build;
 Neon Free stores PostgreSQL data. No cloud resources or deployment have been verified yet.
-Authentication remains required before submission; cloud verification is still pending.
+Authentication foundation alone is not safe for public deployment: business APIs remain
+unprotected. Complete Task 13A-2 origin checks, throttling, full idle/absolute expiry, API
+protection and Render proxy verification, then React login integration, before exposure.
+Cloud verification is still pending.
 
 ## Preparation (local, no cloud action)
 
@@ -14,7 +17,8 @@ npm run build
 ```
 
 Retain this layout: apps/api/dist, apps/api/migrations/001_employees.sql,
-apps/api/migrations/002_salary_history.sql, apps/web/dist, and runtime node_modules.
+apps/api/migrations/002_salary_history.sql, apps/api/migrations/003_hr_sessions.sql,
+apps/web/dist, and runtime node_modules.
 TypeScript compilation does not copy SQL; the repository checkout already includes it beside
 dist. A dist-only API upload is insufficient. Never copy source, environment files, or secrets
 into apps/web/dist. Build and startup do not migrate or seed.
@@ -30,6 +34,11 @@ into apps/web/dist. Build and startup do not migrate or seed.
 - Set DATABASE_URL securely to the Neon runtime connection string, preferably pooled, with
   verified TLS (sslmode=verify-full). Do not disable certificate verification or expose the URL
   through VITE_* variables, logs, Git, or this document. Existing pg.Pool needs no Neon SDK.
+- Server startup also requires HR_USERNAME, HR_PASSWORD_HASH and SESSION_SECRET as secret
+  environment values. Generate the salted hash with the local auth:hash command and use a
+  stable, random 32-byte-or-longer base64url session secret. Do not log or commit these values.
+  Changing the signing secret invalidates existing cookies. APP_ORIGIN and proxy configuration
+  will be completed/documented in Task 13A-2; do not deploy this intermediate increment.
 - Select /health for the platform health check; it reports liveness, not database readiness.
   Set Auto-Deploy to Off after initial creation to retain manual deployment approval.
 

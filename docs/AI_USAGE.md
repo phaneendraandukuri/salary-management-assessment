@@ -686,3 +686,53 @@ and 115 frontend tests (6.15 s). Isolated PostgreSQL integration tests passed 14
 Format checks, type checks, lint, both builds, and git diff --check passed. No hosted/10,000-row
 UI verification is claimed. Candidate review remains pending; Codex has not staged, committed,
 pushed, provisioned resources, deployed, or begun Task 12C.
+
+## Task 13A-1 — HR authentication foundation
+
+The candidate confirmed Task 12B review/commit/push and approved only the split backend
+foundation. Codex added credential configuration, asynchronous scrypt verification, hidden
+password-hash tooling, established Express/PostgreSQL session libraries, migration 003,
+login/session/logout endpoints, minimal server wiring, tests and documentation. Existing
+business APIs and React workflows remain unchanged and unprotected. No Task 13A-2 hardening,
+React login, diagnostics increment, account setup, cloud resources or deployment was started.
+
+| Behavior | Actual Red evidence | Green evidence |
+| --- | --- | --- |
+| Credential verification/configuration | 4/5 failed: correct password rejected, salt/configuration missing | 5 passed |
+| Login/session/logout, regeneration and cookies | 8/8 failed: missing routes returned 404 | 13 credential/endpoint tests passed |
+| Opportunistic cleanup | Prune callback never invoked | All 15 endpoint tests passed; cleanup failure retained valid login |
+| PostgreSQL session persistence/lifecycle | 6/7 failed: login 500 with missing session table after SELECT 1 and existing migrations succeeded | 7 passed after migration 003 |
+| Server wiring | App factory received no authentication options | Wiring test passed |
+| Hidden password entry | 5 failed: no value, rejection or terminal restoration | 5 passed |
+| Private hash file | 2 failed: no output file and invalid input accepted | 2 passed |
+
+Storage-failure sanitization, save-before-response and simulated HTTPS checks passed immediately
+as regression coverage; they are not separate Red cycles. The first delayed-save test timed
+out because its stub blocked an additional middleware save; intercepting only the first save
+fixed the harness. The first prompt Red run also had an unhandled simulated input error;
+the test harness was corrected and rerun, yielding five expected behavioral failures before
+implementation. Type checks caught three test typing issues, which were corrected. Prettier
+formatted the new files and small wiring changes; no unrelated source was changed.
+
+Password tests generated random credentials/hashes/secrets at runtime and used boolean checks
+to avoid printing their values. Private hash-file tests cleaned their temporary directory.
+Full validation: npm test passed 381 backend tests (2.45 s) and unchanged 115 frontend tests
+(5.07 s); isolated acme_test integration tests passed 153 (5.11 s). Formatting, type checks,
+lint, both builds and git diff --check passed. Integration coverage includes cross-instance
+persistence, regeneration, logout deletion, rejecting an expired row before pruning, pruning
+only expired rows, migration reruns and a sanitized missing-table failure. Its schema/pools
+use try/finally cleanup; a read-only metadata check found zero test_auth_* schemas afterward.
+
+An automated pseudo-terminal smoke check (not a human/browser verification) exercised the root
+npm auth:hash command and compiled CLI from /private/tmp. Both used temporary random passwords,
+created owner-only hash files, printed neither password nor hash and exited successfully;
+temporary files/processes were cleaned. The initial sandboxed CLI check could not execute
+successfully, and direct psql access was blocked by sandbox permissions. Both checks passed
+after execution approval outside the sandbox. A version-pinning npm command stalled and was
+interrupted; offline commands pinned already installed/cached packages without changing scope.
+
+This is explicitly not production-ready. Business API protection, origin enforcement, login
+throttling, complete idle/eight-hour absolute expiry, and Render proxy verification remain
+mandatory Task 13A-2 work. Secure cookie flags were tested with simulated HTTPS, not hosted
+Render. Candidate review remains pending. Codex has not staged, committed, pushed, provisioned
+resources, deployed or begun another task.

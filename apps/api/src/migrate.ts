@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import type { Pool } from 'pg';
 
 export async function migrate(pool: Pool): Promise<void> {
-  const files = ['001_employees.sql', '002_salary_history.sql'];
+  const files = ['001_employees.sql', '002_salary_history.sql', '003_hr_sessions.sql'];
   const statements = await Promise.all(
     files.map((file) => readFile(new URL(`../migrations/${file}`, import.meta.url), 'utf8')),
   );

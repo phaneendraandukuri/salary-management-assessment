@@ -24,8 +24,10 @@ currency/country/department grouping. Apply/Reset and the applied summary work s
 the directory. Confirmed creations/salary saves refresh open insights using applied criteria;
 errors do not undo write confirmations. Closing and reopening resets filters to defaults.
 Statistics display the API's exact strings and explain its currency separation/rounding.
-Authentication and
-deployment are not implemented yet.
+The backend authentication foundation is implemented; React login and API protection remain
+pending. **Do not expose this increment publicly:** business APIs are still unprotected.
+Origin checks, login throttling, full idle/absolute expiry, and Render proxy verification are
+mandatory Task 13A-2 work. Deployment remains unverified.
 
 ## Local setup
 
@@ -36,7 +38,7 @@ From the repository root:
 npm ci
 ```
 
-Complete the PostgreSQL setup below first. Run these commands in separate terminals:
+Complete the PostgreSQL and HR credential setup below first. Run these commands in separate terminals:
 
 ```sh
 export DATABASE_URL=postgresql://localhost:5432/acme
@@ -49,7 +51,8 @@ npm run dev:web
 - The API reads the optional `PORT` environment variable, defaulting to 3000.
   For example: `PORT=3001 npm run dev:api`. `.env.example` documents the setting;
   environment files are not automatically loaded by the current API startup configuration.
-- API startup requires `DATABASE_URL`. Migrations must be run explicitly before employee requests.
+- API startup requires `DATABASE_URL`, `HR_USERNAME`, `HR_PASSWORD_HASH`, and `SESSION_SECRET`.
+  Migrations must be run explicitly before employee or authentication requests.
 - Vite automatically loads supported frontend environment files from `apps/web`.
 - In development, Vite proxies `/api` to `http://localhost:3000`. For a different API port,
   use `API_PROXY_TARGET=http://localhost:3001 npm run dev:web` (a shell environment variable).
@@ -94,6 +97,8 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the selected Render Free + Neon
 - `apps/api/src/list-salary-history.ts`: employee-scoped, bounded history retrieval.
 - `apps/api/migrations/001_employees.sql`: initial employee schema.
 - `apps/api/migrations/002_salary_history.sql`, `src/update-salary.ts`: history storage and atomic salary edits.
+- `apps/api/src/auth.ts`, `hr-credentials.ts`, `session-store.ts`: HR authentication foundation.
+- `apps/api/migrations/003_hr_sessions.sql`: PostgreSQL session table and expiry index.
 - Root: npm workspaces, shared strict TypeScript settings, ESLint, and one dependency lockfile.
 - `docs/AI_USAGE.md`: actual AI assistance and validation evidence.
 
@@ -128,7 +133,7 @@ npm run db:migrate
 npm run test:integration
 ```
 
-The migration command explicitly applies `001_employees.sql` then `002_salary_history.sql`
+The migration command explicitly applies `001_employees.sql`, `002_salary_history.sql`, then `003_hr_sessions.sql`
 in one transaction. It can be reapplied without removing records; it creates missing tables/indexes
 but does not upgrade existing definitions. Future schema changes need new numbered migrations
 rather than editing a committed migration. Include `apps/api/migrations` in deployment artifacts;
@@ -226,5 +231,49 @@ curl -i 'http://localhost:3000/api/employees?page=1&pageSize=25'
 Counts and page rows use separate queries, so concurrent writes can briefly make them differ.
 This applies to history pagination as well as the directory. Salary update transactions are atomic,
 but a lost connection during commit can leave the caller uncertain; do not retry automatically.
-Authentication remains pending. On SIGINT/SIGTERM, the server stops
-accepting requests, waits for active requests, and closes the pool.
+API protection and React login remain pending. On SIGINT/SIGTERM, the server stops
+accepting requests, waits for active requests, closes the session store, and closes the pool.
+
+## HR authentication foundation (not production-ready)
+
+Choose one HR username and a strong unique demo password (at least 12 characters). Generate
+the hash interactively; password entry is hidden and the command refuses piped input:
+
+```sh
+npm run auth:hash -- /private/tmp/acme-hr-password-hash
+```
+
+The destination must be a new file outside the repository, including through symlinked parents.
+It contains only the salted hash, with owner-only permissions; the command prints no hash or
+password. Configure `HR_USERNAME` and `HR_PASSWORD_HASH` securely from that file. Generate
+`SESSION_SECRET` from at least 32 random bytes encoded as base64url, for example into another
+private file (this command prints no secret):
+
+```sh
+node --input-type=module -e "import {randomBytes} from 'node:crypto'; import {writeFileSync} from 'node:fs'; writeFileSync('/private/tmp/acme-session-secret', randomBytes(32).toString('base64url'), {flag:'wx', mode:0o600})"
+```
+
+Supply these values through server environment variables without pasting them into shell
+commands/history, Git, logs, or `VITE_*` variables. For local startup, a private environment
+file outside Git may be explicitly loaded with Node's `--env-file` via `NODE_OPTIONS`; our API
+does not automatically load it. Quote the hash value in that file. Never reuse a real account's
+password. Transfer values securely, then remove temporary secret files when no longer needed.
+
+- `POST /api/auth/login` accepts `{username, password}` and returns `200 {user:{username}}`.
+  Invalid input returns 400 `invalid_credentials_input`; incorrect credentials return generic
+  401 `invalid_credentials`. JSON bodies are limited to 4 KiB; malformed JSON uses the existing
+  400 `invalid_json`, oversized bodies 413 `body_too_large`.
+- `GET /api/auth/session` returns the same user object or 401 `authentication_required`.
+- `POST /api/auth/logout` destroys the session and clears the cookie, returning idempotent 204.
+- Auth responses have `Cache-Control: no-store`. Session failures return sanitized 500
+  `persistence_failed`; regeneration and saving must finish before login succeeds.
+- Sessions use PostgreSQL and a signed, host-only `acme_session` cookie with HttpOnly,
+  SameSite=Lax, Path=/ and a 30-minute lifetime. Production requires Secure; direct HTTP does
+  not receive the production cookie. Render proxy behavior is not verified in this task.
+- Successful login replaces the session ID. Expired database rows cannot authenticate even
+  before deletion. Login opportunistically prunes expired rows; cleanup failure does not
+  invalidate a saved login. No background pruning timer repeatedly wakes Neon.
+
+Only auth routes currently load sessions. Business APIs and the existing React workflows
+remain unchanged and unprotected. Sliding idle renewal, an eight-hour absolute limit,
+origin enforcement, throttling, and production proxy verification remain Task 13A-2 work.

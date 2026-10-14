@@ -315,3 +315,30 @@ The agreed `salary_unchanged` → HTTP 409 mapping belongs to Task 7B.
   known options, while API validation remains authoritative. A responsive form and scrollable
   table display currency/group values explicitly. Wide values stay exact rather than being
   abbreviated or converted through Number. Broader navigation remains a separate increment.
+
+## HR authentication foundation — Task 13A-1
+
+- One environment-configured account avoids user management. A fixed, validated scrypt hash
+  format uses N=32768, r=8, p=3, 16-byte random salt, 64-byte derived key and 64 MiB maxmem.
+  Verification is asynchronous and compares equal-length keys with timingSafeEqual. It still
+  derives the key for a wrong username, then gives the same generic credential error.
+- The interactive helper hides input, restores terminal mode, and writes only a salted hash
+  to a new owner-only file outside the repository. Secret configuration fails startup before
+  pool/listener creation; no defaults or plaintext passwords are provided.
+- express-session owns session IDs/cookies/lifecycle; connect-pg-simple shares the existing
+  pool. Migration 003 matches its sid/JSON/expiry schema and indexes expiry. No automatic
+  table creation, user table, JWT, browser token storage, custom store, or background pruning.
+- Auth routes regenerate and explicitly save before success. Failure destroys/unsets the
+  request session so response completion cannot retry saving authenticated state. Cleanup
+  is best effort and cannot turn a saved login into failure. Logout waits for deletion before
+  clearing the cookie. Store callbacks use the existing sanitized error handler.
+- Expiry is enforced by store retrieval even while expired rows remain. Cookie lifetime is
+  30 minutes; complete sliding idle/eight-hour absolute policy is deferred to Task 13A-2.
+  Secure is mandatory in production; simulated HTTPS verifies its flag, not Render proxy
+  behavior. Auth routes alone load sessions, preserving existing employee API behavior.
+- SessionData module augmentation describes our optional username property to TypeScript;
+  it does not alter library behavior. Small Promise adapters await callback-based operations.
+  Normal tests use MemoryStore only as a test double; runtime always uses PostgreSQL.
+- This increment is not production-ready. Business API protection, origin checks, throttling,
+  expiry policy and proxy verification remain mandatory. React login and deployment are
+  separate increments; safe diagnostics remain separately deferred.
