@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getEmployeePage } from './employee-api';
 import type { EmployeePage } from './employee-api';
+import { EmployeeCreationForm } from './EmployeeCreationForm';
 import './App.css';
 
 type DirectoryState =
@@ -27,6 +28,11 @@ export function App() {
     setRequest({ page, attempt: request.attempt + 1 });
   }
 
+  function refreshDirectory() {
+    setState({ status: 'loading' });
+    setRequest((current) => ({ ...current, attempt: current.attempt + 1 }));
+  }
+
   return (
     <main className="directory">
       <header className="page-header">
@@ -36,6 +42,7 @@ export function App() {
           Current annual base salaries, in each employee’s original currency.
         </p>
       </header>
+      <EmployeeCreationForm onCreated={refreshDirectory} />
       <section className="directory-card" aria-labelledby="directory-heading">
         <div className="directory-heading">
           <h2 id="directory-heading">Employee directory</h2>

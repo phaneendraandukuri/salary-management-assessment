@@ -163,3 +163,61 @@ button:disabled {
     align-items: flex-start;
   }
 }
+
+.creation-form {
+  padding: 24px;
+  margin-bottom: 24px;
+  background: white;
+  border: 1px solid #dce3ea;
+  border-radius: 12px;
+}
+.creation-form > p,
+#salary-guidance {
+  color: #526276;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.creation-form [role='alert'] {
+  color: #932d2d;
+}
+.creation-form fieldset {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  min-width: 0;
+}
+.creation-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 16px;
+}
+.creation-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.creation-fields input,
+.creation-fields select {
+  font: inherit;
+  font-weight: 400;
+  padding: 10px;
+  width: 100%;
+  border: 1px solid #bdcbd9;
+  border-radius: 6px;
+  background: white;
+  color: #182a3d;
+}
+.creation-fields [aria-invalid='true'] {
+  border-color: #932d2d;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

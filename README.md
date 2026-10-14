@@ -3,7 +3,10 @@
 Salary management for ACME's HR Manager. Product scope is in [REQUIREMENTS.md](REQUIREMENTS.md).
 The backend includes salary/employee validation, PostgreSQL employee creation, and paginated
 create/list HTTP APIs. The React directory displays real employees with loading, empty/error,
-retry, and pagination states. Employee creation through the UI remains pending.
+retry, and pagination states. A separate form creates employees, confirms success, and refreshes
+the current directory page. Failed submissions retain entered values; uncertain network failures
+ask you to check the directory before resubmitting. Employee-ID ordering means a new record may
+appear on another page.
 Salary updates/history, directory search/filter/sort, analytics, authentication, seeding, and deployment
 are not implemented yet.
 

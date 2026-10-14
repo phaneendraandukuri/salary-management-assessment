@@ -247,3 +247,46 @@ and sizes as Task 5. No new browser check was performed for this mechanical incr
 
 Review remains pending. Codex has not staged, committed, pushed, or started Task 6. Integration
 cleanup hardening and safe server-side diagnostics remain follow-up considerations.
+
+## Task 6 — React employee creation
+
+The candidate confirmed the formatting increment was reviewed, committed, and pushed, then
+authorized the previously proposed creation form. Codex added a separate component, a typed
+POST helper, a directory-refresh callback, minimal form styles, tests, and these documentation
+notes. No dependencies, backend behavior, migrations, or unrelated architecture changed.
+
+| Behavior | Actual Red evidence | Green evidence |
+| --- | --- | --- |
+| POST exact employee fields | Fetch was never called | 11 frontend tests passed |
+| Submitting and confirmed success | 2 failed: no status/disabled controls or success/reset notification | 13 passed |
+| Validation/duplicate and request failures | 10 failed: no alerts; response/network errors escaped | 23 passed |
+| Directory refresh and independent creation success | 2 failed: form not mounted in App | 25 passed |
+| Unknown/malformed API errors | 2 failed: inherited message key crashed rendering; malformed HTTP 400 incorrectly reported uncertainty | 28 passed |
+
+Native required/email validation coverage passed immediately with existing form controls and
+is regression coverage, not another Red cycle. Type checking caught unsupported `exact` options
+in Testing Library test queries; removing them resolved this test-only issue. Formatting,
+field labels/accessibility, and presentation were refined without component extraction or a
+form library. Error Red runs included uncaught behavioral response failures, not broken imports
+or infrastructure failures; the Green suite has no such errors.
+
+Manual Chrome verification used fresh temporary API/Vite servers and a random private schema
+only in `acme_test`: zero-salary rejection with retained values; successful synthetic employee
+creation with `009007199254740993.01` stored/displayed as `9007199254740993.01`; success/reset
+and refreshed directory; duplicate-ID rejection without changing the original row; API-down
+failure with retained values; manual resubmission after recovery. Two synthetic records were
+created. Network uncertainty and post-success directory failure were automated-test checks,
+not claims of manually reproducing those cases. A screenshot is outside Git at
+`/private/tmp/acme-employee-creation.jpg`.
+
+The first harness invocation was blocked by sandbox PostgreSQL socket permissions; an approved
+rerun enabled verification. This is infrastructure evidence, not business Red. The harness
+received `stop`, cleaned up, then exited 0 after terminal input closed. Read-only checks found
+zero private test schemas, zero other acme_test connections, and no listeners on its API/UI
+ports. The agent-created browser tab was closed; development data and the candidate API were
+untouched. Final validation: `npm test` passed 172 API tests (320 ms) and 28 frontend tests
+(5.03 s); explicit PostgreSQL integration tests passed 52 (1.20 s). Type checks, lint, both
+builds, and `git diff --check` passed. Vite transformed 18 modules. The first final format
+check found the new form test file still needed formatting; a second formatter pass resolved
+it and `format:check` passed. Candidate review remains pending; Codex has not staged, committed,
+pushed, deployed, or started another task.

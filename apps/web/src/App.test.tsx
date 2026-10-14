@@ -185,3 +185,42 @@ describe('employee directory', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });
+
+it.each([false, true])(
+  'refreshes the current page after creation; refresh failure=%s',
+  async (refreshFails) => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse([employee], 26))
+      .mockResolvedValueOnce(jsonResponse([employee], 26, 2))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ employee }), { status: 201 }));
+    if (refreshFails) fetchMock.mockRejectedValueOnce(new Error('Refresh failed'));
+    else fetchMock.mockResolvedValueOnce(jsonResponse([employee], 27, 2));
+    vi.stubGlobal('fetch', fetchMock);
+    render(<App />);
+    const user = userEvent.setup();
+    await screen.findByRole('table');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await screen.findByRole('table');
+    for (const [label, value] of [
+      ['Employee ID', employee.employeeId],
+      ['Name', employee.name],
+      ['Email', employee.email],
+      ['Department', employee.department],
+      ['Role', employee.role],
+      ['Country', employee.country],
+      ['Annual salary', employee.salaryAmount],
+    ])
+      await user.type(screen.getByRole('textbox', { name: label }), value);
+    await user.click(screen.getByRole('button', { name: 'Create employee' }));
+    expect(await screen.findByText('Employee ACME-001 created.')).toBeInTheDocument();
+    if (refreshFails) {
+      expect(await screen.findByRole('alert')).toHaveTextContent('Unable to load employees');
+      expect(screen.getByText('Employee ACME-001 created.')).toBeInTheDocument();
+    } else {
+      expect(await screen.findByText('27 employees')).toBeInTheDocument();
+    }
+    expect(fetchMock.mock.calls[3][0]).toBe('/api/employees?page=2&pageSize=25');
+    expect(screen.getByText('Page 2')).toBeInTheDocument();
+  },
+);

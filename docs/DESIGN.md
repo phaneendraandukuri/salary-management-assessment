@@ -86,3 +86,21 @@ and normalization rules are deliberately deferred rather than silently imposed.
 - Vite's development proxy avoids local cross-origin configuration. Production must route
   the same relative `/api` path to the backend during deployment. No production routing is
   claimed here. Caching, URL-based page state, and employee creation are outside this increment.
+
+## React employee creation — Task 6
+
+- A separate form uses native required/email checks, local submission state, and uncontrolled
+  inputs read with FormData. Its fixed eight string-valued controls justify the Employee type
+  assertion; salary is a text input with decimal keyboard guidance, never a JavaScript number.
+  The backend remains authoritative for validation, normalization, and uniqueness.
+- POST returns a discriminated success/error result. Known validation and duplicate-ID errors
+  have friendly messages linked to the invalid field. Unknown errors use a general message;
+  raw server details are not rendered. Own-property checks prevent inherited object keys from
+  being treated as message strings. HTTP 201 must contain a string employee ID to confirm success.
+- Disable the form while submitting and do not retry POST automatically. Network failures or
+  unreadable success responses leave the outcome uncertain: check the directory before trying
+  again. This is not an idempotency mechanism. A known HTTP failure retains input for correction.
+- Successful creation resets the form and invokes a small App callback that refreshes the
+  currently selected directory page using a functional state update. Creation feedback and
+  directory state stay independent: a failed refresh does not undo or misreport a confirmed
+  insert. Employee-ID ordering can place the new record on a different page.
