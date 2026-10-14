@@ -4,6 +4,9 @@ import type { Pool } from 'pg';
 import { createPool } from './database.js';
 import { migrate } from './migrate.js';
 import { createEmployee } from './create-employee.js';
+import { listEmployees } from './list-employees.js';
+import request from 'supertest';
+import { createApp } from './app.js';
 
 const connectionString = process.env.TEST_DATABASE_URL;
 if (!connectionString || new URL(connectionString).pathname !== '/acme_test') {
@@ -37,6 +40,79 @@ beforeAll(async () => {
   pool = createPool(isolatedUrl.toString());
   observer = createPool(isolatedUrl.toString());
   await migrate(pool);
+});
+
+describe('listEmployees with PostgreSQL', () => {
+  it('returns a bounded page ordered by employee ID with an accurate total', async () => {
+    const first = { ...employee, employeeId: 'ACME-001', salaryAmount: '9007199254740993.01' };
+    const second = { ...employee, employeeId: 'ACME-002' };
+    const third = { ...employee, employeeId: 'ACME-003' };
+    for (const row of [third, first, second]) await createEmployee(pool, row);
+    expect(await listEmployees(pool, { page: 1, pageSize: 2 })).toEqual({
+      employees: [first, second], page: 1, pageSize: 2, total: 3,
+    });
+    expect(await listEmployees(pool, { page: 2, pageSize: 2 })).toEqual({
+      employees: [third], page: 2, pageSize: 2, total: 3,
+    });
+  });
+
+  it('returns an empty page and zero total for an empty database', async () => {
+    expect(await listEmployees(pool, { page: 1, pageSize: 25 })).toEqual({
+      employees: [], page: 1, pageSize: 25, total: 0,
+    });
+  });
+
+  it('preserves the total for a page beyond the end', async () => {
+    await createEmployee(pool, employee);
+    expect(await listEmployees(pool, { page: 3, pageSize: 2 })).toEqual({
+      employees: [], page: 3, pageSize: 2, total: 1,
+    });
+  });
+});
+
+describe('employee HTTP API with PostgreSQL', () => {
+  function api() {
+    return createApp({
+      createEmployee: (input) => createEmployee(pool, input),
+      listEmployees: (pagination) => listEmployees(pool, pagination),
+    });
+  }
+
+  it('creates and lists the same canonical employee through HTTP', async () => {
+    const app = api();
+    const input = { ...employee, name: ' Alex Example ', salaryAmount: '009007199254740993.01' };
+    const stored = { ...employee, salaryAmount: '9007199254740993.01' };
+    const created = await request(app).post('/api/employees').send(input);
+    expect(created.status).toBe(201);
+    expect(created.body).toEqual({ employee: stored });
+    const listed = await request(app).get('/api/employees?page=1&pageSize=1');
+    expect(listed.status).toBe(200);
+    expect(listed.body).toEqual({ employees: [stored], page: 1, pageSize: 1, total: 1 });
+  });
+
+  it('returns HTTP 409 for duplicate IDs and keeps the original employee', async () => {
+    const app = api();
+    expect((await request(app).post('/api/employees').send(employee)).status).toBe(201);
+    const duplicate = await request(app).post('/api/employees').send({ ...employee, name: 'Other Name' });
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body).toEqual({ error: { field: 'employeeId', code: 'duplicate_employee_id' } });
+    expect((await request(app).get('/api/employees')).body.employees).toEqual([employee]);
+  });
+
+  it('returns HTTP 400 for invalid input without persisting it', async () => {
+    const app = api();
+    const response = await request(app).post('/api/employees').send({ ...employee, salaryAmount: '0' });
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: { field: 'salaryAmount', code: 'invalid_amount' } });
+    expect((await request(app).get('/api/employees')).body.total).toBe(0);
+  });
+
+  it('returns HTTP 400 for database numeric overflow without leaking its message', async () => {
+    const response = await request(api()).post('/api/employees')
+      .send({ ...employee, salaryAmount: `${'9'.repeat(131073)}.00` });
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: { field: 'salaryAmount', code: 'amount_not_storable' } });
+  });
 });
 
 beforeEach(async () => {

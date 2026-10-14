@@ -4,7 +4,7 @@
 
 OpenAI Codex assisted with reviewing the original assessment and project instructions,
 planning incremental delivery, refining `REQUIREMENTS.md`, and implementing the approved
-minimal repository bootstrap, annual salary validation, and employee persistence. The candidate owns product
+minimal repository bootstrap, annual salary validation, employee persistence, and create/list HTTP APIs. The candidate owns product
 decisions, reviews, and commits.
 
 Representative requests (summaries, not verbatim transcripts):
@@ -84,7 +84,7 @@ condition for readability; no additional abstraction or behavioral refactor was 
 Final validation after cleanup: `npm test` passed all 53 tests in two files (197 ms total);
 `npm run typecheck`, `npm run lint`, `npm run build`, and `git diff --check` exited 0.
 Both apps built successfully; Vite transformed 15 modules. No dependencies or configuration
-were changed. These checks were run by Codex. Candidate review of Task 2 remains pending;
+were changed. These checks were run by Codex. Candidate review was pending at that handoff;
 Codex has not staged, committed, or pushed this increment.
 The candidate subsequently approved canonicalizing redundant leading zeros within Task 2.
 Codex added the three requested examples before implementation. `npm test` failed exactly
@@ -93,7 +93,8 @@ instead of `100.50`, `0.01`, and `1.00`. Removing leading whole-part zeros and f
 to `0` made all 56 tests pass (107 ms total). No numeric conversion or database limit was added.
 No further refactor was justified for this one-line normalization step.
 Final refinement checks: `npm test` passed all 56 tests (174 ms total); type checking,
-linting, both builds, and `git diff --check` passed. Task 2 final review remains pending.
+linting, both builds, and `git diff --check` passed. The candidate subsequently confirmed
+Task 2 review and commit `334df49`.
 
 No deployed application or seed script is claimed.
 
@@ -144,5 +145,47 @@ development database, which remained empty; no integration tests connected to it
 metadata check found zero leftover private test schemas in `acme_test`.
 
 No HTTP routes, frontend features, salary history, analytics, authentication, or seeding
-were added. Task 3 candidate review remains pending. No staging, commits, pushes, or work
-on the next task were performed.
+were added. The candidate subsequently confirmed Task 3 review, commit, and push (`fb01d9f`).
+Codex performed no staging, commits, pushes, or work on the next task before authorization.
+
+## Task 4 — paginated retrieval and create/list HTTP API
+
+The candidate approved paginated retrieval and POST/GET employee routes, bounded pagination,
+HTTP error contracts, minimal function injection, and a 1 MiB JSON limit. Codex implemented
+those only, plus pool/listener startup and shutdown wiring. No dependencies, migrations,
+frontend features, search/filter/configurable sort, history, analytics, authentication, or
+seeding were added. The existing integration suite was renamed to `employees.integration.test.ts`
+and expanded without removing its 45 employee-creation tests.
+
+| Behavior | Actual Red evidence | Green evidence |
+| --- | --- | --- |
+| Pagination defaults and explicit values | Default result was rejected; explicit values then returned defaults | 117 total database-independent tests passed |
+| Invalid pagination and safe offsets | 32 cases incorrectly returned success | 149 passed |
+| PostgreSQL retrieval | Populated page returned no employees/zero total; beyond-end total was zero | 48 integration tests passed |
+| HTTP create/list success | GET/POST returned 404 instead of 200/201 | 151 database-independent tests passed |
+| HTTP errors/query shapes/body limits | 9 cases had wrong status, HTML errors, ignored nested queries, or the default body limit | 172 passed |
+
+Other API mapping cases passed immediately using the earlier guards and are regression
+coverage. Four real HTTP/PostgreSQL create-then-list/error tests passed after the route and
+SQL cycles, bringing integration coverage to 52; they are not claimed as separate Red cycles.
+
+The initial sandbox PostgreSQL check reported no response; an approved check outside it
+verified connectivity before behavioral tests. A rename-patch mistake briefly caused a
+test parse failure, corrected before recording retrieval Red evidence. Two interim type checks
+caught a test-table union typing issue, resolved by retaining complete result objects;
+production types were not weakened. These failures are not business-behavior Red evidence.
+
+Final checks by Codex: `npm test` passed 172 tests (283 ms total); explicit
+`TEST_DATABASE_URL=postgresql://localhost:5432/acme_test npm run test:integration` passed
+52 tests (731 ms total). Type checking, linting, both builds, and `git diff --check` passed.
+A separate temporary-server check exercised source and compiled entry points only against a
+private schema in `acme_test`: health 200, create 201, list 200 with exact salary strings,
+and SIGTERM exit 0. Both servers and their schema were cleaned up. No browser testing or
+deployment is claimed.
+
+Counts/page rows use separate queries and can differ during concurrent writes. Salary values
+remain strings; numeric conversion is only for validated pagination and headcount metadata.
+Express 5 async error handling was checked against official documentation. Task 4 candidate
+review remains pending. No staging, commits, pushes, or deployment were performed. The
+candidate requested first React directory/creation integration after this increment is committed;
+that work has not started and still requires task approval.

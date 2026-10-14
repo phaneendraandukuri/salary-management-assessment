@@ -1,9 +1,9 @@
 # ACME Salary Management
 
 Salary management for ACME's HR Manager. Product scope is in [REQUIREMENTS.md](REQUIREMENTS.md).
-The backend includes salary/employee validation and PostgreSQL employee creation.
-The UI remains a placeholder and the only HTTP route is `/health`.
-Salary updates/history, directory queries, analytics, authentication, seeding, and deployment
+The backend includes salary/employee validation, PostgreSQL employee creation, and paginated
+create/list HTTP APIs. The UI remains a placeholder.
+Salary updates/history, directory search/filter/sort, analytics, authentication, seeding, and deployment
 are not implemented yet.
 
 ## Local setup
@@ -15,9 +15,10 @@ From the repository root:
 npm ci
 ```
 
-Run these commands in separate terminals:
+Complete the PostgreSQL setup below first. Run these commands in separate terminals:
 
 ```sh
+export DATABASE_URL=postgresql://localhost:5432/acme
 npm run dev:api
 npm run dev:web
 ```
@@ -27,6 +28,7 @@ npm run dev:web
 - The API reads the optional `PORT` environment variable, defaulting to 3000.
   For example: `PORT=3001 npm run dev:api`. `.env.example` documents the setting;
   environment files are not automatically loaded by the current API startup configuration.
+- API startup requires `DATABASE_URL`. Migrations must be run explicitly before employee requests.
 - Vite automatically loads supported frontend environment files from `apps/web`.
 - The health endpoint confirms the API can respond; it does not check database readiness.
 
@@ -48,9 +50,10 @@ serves the UI build locally. Vite preview is a local check, not a production hos
 
 ## Structure
 
-- `apps/api/src/app.ts`: Express app; `server.ts`: HTTP listener; `app.test.ts`: health contract.
+- `apps/api/src/app.ts`: Express app factory and HTTP contracts; `server.ts`: pool/listener wiring.
 - `apps/web/src`: React entry point and placeholder screen.
 - `apps/api/src/employee.ts`, `create-employee.ts`: validation and one parameterized insert.
+- `apps/api/src/pagination.ts`, `list-employees.ts`: query validation and bounded retrieval.
 - `apps/api/migrations/001_employees.sql`: initial employee schema.
 - Root: npm workspaces, shared strict TypeScript settings, ESLint, and one dependency lockfile.
 - `docs/AI_USAGE.md`: actual AI assistance and validation evidence.
@@ -94,5 +97,29 @@ truncate only that schema's employee table between tests, and remove the schema 
 They never use `DATABASE_URL` or the development database. A killed test process may leave
 its test schema behind; later runs use different names.
 
-Validation is exposed as a backend function only; there is no employee HTTP endpoint yet.
 To stop the local database when finished: `brew services stop postgresql@18`.
+
+## Employee HTTP API
+
+- `GET /api/employees?page=1&pageSize=25` returns
+  `{ "employees": [...], "page": 1, "pageSize": 25, "total": 42 }`.
+  Defaults are page 1 and size 25; sizes must be 1–100. Pagination values must be single
+  positive integer strings with safe numeric values and a safe calculated offset.
+  Results are ordered by employee ID ascending; empty/beyond-end pages retain the total.
+- `POST /api/employees` accepts the eight employee fields, with `salaryAmount` as a string,
+  and returns HTTP 201 with `{ "employee": {...} }`.
+- Errors use `{ "error": { "code": "...", "field": "..." } }`; `field` is omitted for
+  general/parser errors. Validation and numeric overflow return 400, duplicate IDs 409,
+  malformed JSON 400, bodies above 1 MiB 413, and database failures a sanitized 500.
+- Salaries remain strings in requests/responses. The 1 MiB limit bounds transport resources;
+  it does not change salary validation's no-chosen-maximum decision.
+
+Example request after starting the API:
+
+```sh
+curl -i 'http://localhost:3000/api/employees?page=1&pageSize=25'
+```
+
+Counts and page rows use separate queries, so concurrent writes can briefly make them differ.
+Authentication and frontend integration remain pending. On SIGINT/SIGTERM, the server stops
+accepting requests, waits for active requests, and closes the pool.

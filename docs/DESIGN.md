@@ -48,3 +48,22 @@ Native Homebrew PostgreSQL was chosen after the Docker runtime was unavailable. 
 authentication is convenient for development; hosted credentials/TLS are a separate deployment
 decision. Free-text country/department values can have inconsistent spelling; lookup tables
 and normalization rules are deliberately deferred rather than silently imposed.
+
+## Employee create/list HTTP API — Task 4
+
+- `createApp` accepts just two employee functions. The HTTP layer does not construct a pool;
+  `server.ts` owns the pool and supplies real operations. The existing exported health-only
+  app keeps health tests independent; HTTP tests supply typed substitutes, while integration
+  tests exercise actual PostgreSQL. No dependency-injection framework or new library.
+- Validate query values as `unknown`; accept only single positive integer strings. Default
+  page/size to 1/25, cap size at 100, and reject unsafe numbers or calculated offsets. Extended
+  query parsing makes nested/array forms explicit so they can be rejected rather than ignored.
+- Read via parameterized LIMIT/OFFSET and employee-ID ordering, with a separate count query.
+  This is simple for 10,000 records and numbered pages. Counts and rows are not a single
+  snapshot under concurrent writes; cursor pagination or snapshot transactions are deferred.
+- Map domain failures to explicit HTTP statuses and JSON error codes. Express 5 forwards
+  rejected async handlers to the final error middleware; SQL details are not returned.
+  JSON parsing is limited to 1 MiB, and invalid/oversized bodies do not call creation.
+- Require DATABASE_URL at startup; migrations remain explicit. Database connections are lazy,
+  so `/health` remains liveness rather than readiness. SIGINT/SIGTERM closes the listener,
+  drains active requests, and ends the pool; no forced shutdown deadline is introduced yet.
