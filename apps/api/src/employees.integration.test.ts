@@ -7,6 +7,8 @@ import { createEmployee } from './create-employee.js';
 import { listEmployees } from './list-employees.js';
 import request from 'supertest';
 import { createApp } from './app.js';
+import { updateSalary } from './update-salary.js';
+import { listSalaryHistory } from './list-salary-history.js';
 
 const connectionString = process.env.TEST_DATABASE_URL;
 if (!connectionString || new URL(connectionString).pathname !== '/acme_test') {
@@ -85,6 +87,9 @@ describe('listEmployees with PostgreSQL', () => {
 describe('employee HTTP API with PostgreSQL', () => {
   function api() {
     return createApp({
+      updateSalary: (employeeId, amount) => updateSalary(pool, employeeId, amount),
+      listSalaryHistory: (employeeId, pagination) =>
+        listSalaryHistory(pool, employeeId, pagination),
       createEmployee: (input) => createEmployee(pool, input),
       listEmployees: (pagination) => listEmployees(pool, pagination),
     });

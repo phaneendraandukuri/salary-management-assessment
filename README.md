@@ -7,8 +7,8 @@ retry, and pagination states. A separate form creates employees, confirms succes
 the current directory page. Failed submissions retain entered values; uncertain network failures
 ask you to check the directory before resubmitting. Employee-ID ordering means a new record may
 appear on another page.
-Transactional salary updates and history storage are implemented internally; their HTTP endpoints
-and UI remain pending. Directory search/filter/sort, analytics, authentication, seeding, and
+Transactional salary updates and paginated history are available through the API; their UI
+remains pending. Directory search/filter/sort, analytics, authentication, seeding, and
 deployment are not implemented yet.
 
 ## Local setup
@@ -69,6 +69,7 @@ serves the UI build locally. Vite preview is a local check, not a production hos
 - `apps/web/src`: React entry point, employee directory, API helper, and behavioral tests.
 - `apps/api/src/employee.ts`, `create-employee.ts`: validation and one parameterized insert.
 - `apps/api/src/pagination.ts`, `list-employees.ts`: query validation and bounded retrieval.
+- `apps/api/src/list-salary-history.ts`: employee-scoped, bounded history retrieval.
 - `apps/api/migrations/001_employees.sql`: initial employee schema.
 - `apps/api/migrations/002_salary_history.sql`, `src/update-salary.ts`: history storage and atomic salary edits.
 - Root: npm workspaces, shared strict TypeScript settings, ESLint, and one dependency lockfile.
@@ -119,7 +120,7 @@ To stop the local database when finished: `brew services stop postgresql@18`.
 
 Salary persistence uses the employee's existing currency and exact decimal strings. A row lock
 serializes edits; salary and history commit together. Unchanged normalized amounts return
-`salary_unchanged` without history. Task 7A adds no salary HTTP endpoint or browser workflow.
+`salary_unchanged` without history. The salary editor/history browser workflow remains pending.
 
 ## Employee HTTP API
 
@@ -130,6 +131,17 @@ serializes edits; salary and history commit together. Unchanged normalized amoun
   Results are ordered by employee ID ascending; empty/beyond-end pages retain the total.
 - `POST /api/employees` accepts the eight employee fields, with `salaryAmount` as a string,
   and returns HTTP 201 with `{ "employee": {...} }`.
+- `PATCH /api/employees/:employeeId/salary` accepts `{ "salaryAmount": "80000.00" }` and returns
+  HTTP 200 with `{ "employee": {...} }`. Existing currency and other employee fields stay unchanged;
+  extra body fields are ignored. Invalid body shape/missing or non-string amounts return 400
+  `invalid_amount`; amount validation and storage errors retain their existing codes/fields.
+- `GET /api/employees/:employeeId/salary-history?page=1&pageSize=25` returns
+  `{ "history": [...], "page": 1, "pageSize": 25, "total": 2 }` using the same pagination rules.
+  Entries contain `historyId`, `employeeId`, `currency`, `oldAmount`, `newAmount`, and `changedAt`.
+  Amounts and BIGINT IDs are strings; timestamps are UTC ISO strings with millisecond precision.
+  Results sort by timestamp descending, then numeric history ID descending. An existing employee
+  with no history returns 200 with an empty page; missing employees return 404 `employee_not_found`.
+  Unchanged normalized salary updates return 409 `salary_unchanged`, without adding history.
 - Errors use `{ "error": { "code": "...", "field": "..." } }`; `field` is omitted for
   general/parser errors. Validation and numeric overflow return 400, duplicate IDs 409,
   malformed JSON 400, bodies above 1 MiB 413, and database failures a sanitized 500.
@@ -143,5 +155,7 @@ curl -i 'http://localhost:3000/api/employees?page=1&pageSize=25'
 ```
 
 Counts and page rows use separate queries, so concurrent writes can briefly make them differ.
+This applies to history pagination as well as the directory. Salary update transactions are atomic,
+but a lost connection during commit can leave the caller uncertain; do not retry automatically.
 Authentication remains pending. On SIGINT/SIGTERM, the server stops
 accepting requests, waits for active requests, and closes the pool.

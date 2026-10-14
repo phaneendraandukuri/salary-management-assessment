@@ -2,6 +2,8 @@ import { createApp } from './app.js';
 import { createPool } from './database.js';
 import { createEmployee } from './create-employee.js';
 import { listEmployees } from './list-employees.js';
+import { updateSalary } from './update-salary.js';
+import { listSalaryHistory } from './list-salary-history.js';
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -11,6 +13,8 @@ const pool = createPool(connectionString);
 const app = createApp({
   createEmployee: (input) => createEmployee(pool, input),
   listEmployees: (pagination) => listEmployees(pool, pagination),
+  updateSalary: (employeeId, amount) => updateSalary(pool, employeeId, amount),
+  listSalaryHistory: (employeeId, pagination) => listSalaryHistory(pool, employeeId, pagination),
 });
 const port = Number(process.env.PORT ?? 3000);
 

@@ -17,6 +17,8 @@ const employee: Employee = {
 
 function operations() {
   return {
+    updateSalary: vi.fn<EmployeeOperations['updateSalary']>(),
+    listSalaryHistory: vi.fn<EmployeeOperations['listSalaryHistory']>(),
     createEmployee: vi
       .fn<EmployeeOperations['createEmployee']>()
       .mockResolvedValue({ ok: true, employee }),

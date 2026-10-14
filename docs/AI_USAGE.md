@@ -327,3 +327,37 @@ type checks, lint, both builds, and `git diff --check` passed. The frontend asse
 unchanged. A final metadata check found zero private test schemas and zero other acme_test
 connections. Task 7B and hosting/deployment work remain unstarted; candidate review is pending.
 Codex has not staged, committed, pushed, or deployed.
+
+## Task 7B — salary update/history HTTP APIs
+
+The candidate confirmed Task 7A review, commit, and push, then approved only history retrieval,
+PATCH salary and GET history endpoints, bounded pagination, error contracts, tests, and minimal
+wiring/documentation. Codex inspected salary/update result types before mapping errors and
+preserved distinct amount_not_storable, salary_unchanged, employee_not_found, invalid_amount,
+and persistence_failed codes and fields. updateSalary and both migrations remain unchanged.
+No frontend features, dependencies, authentication, directory enhancements, or analytics changed.
+
+| Behavior | Actual Red evidence | Green evidence |
+| --- | --- | --- |
+| History retrieval/existence | 2 failed: populated history empty; missing employee returned success | 93 integration tests passed |
+| HTTP update/history success | 2 failed: endpoints returned 404 instead of 200 | 177 API unit tests passed |
+| HTTP rejection contracts | 10 failed: incorrect statuses and invalid PATCH bodies reached persistence | 201 API unit tests passed |
+
+Empty history, shared pagination/parser/error-middleware cases, and two earlier amount mappings
+passed immediately and are regression coverage. Twelve real HTTP/PostgreSQL tests passed after
+the retrieval/route cycles, bringing integration coverage to 105. They verify update-to-history,
+exact precision/currency preservation, missing vs empty history, unchanged conflicts, invalid
+inputs, overflow, rollback, and sanitized query failure; these are not extra claimed Red cycles.
+Formatting and diff review kept existing behavior and the approved lightweight architecture.
+
+Sandbox readiness initially reported no response; the approved check verified PostgreSQL before
+behavioral tests. A separate temporary compiled API check only in a private acme_test schema
+verified health/create, salary update, exact history, unchanged 409, missing 404, and SIGTERM exit 0.
+The server stopped, pools closed, and the schema was dropped. No browser interaction was needed
+for this backend increment; development data and the candidate's running API were untouched.
+Final validation: `npm test` passed 201 API tests (401 ms) and 28 frontend tests (5.13 s).
+The explicit isolated PostgreSQL integration suite passed 105 tests (1.98 s). Format checks,
+type checks, lint, both builds, and `git diff --check` passed. Frontend assets are unchanged.
+Final metadata checks found zero private test schemas and zero other acme_test connections.
+Candidate review remains pending; no staging, commits, pushes, deployment, or work on another
+task was performed by Codex.

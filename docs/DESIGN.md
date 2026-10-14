@@ -134,3 +134,25 @@ and normalization rules are deliberately deferred rather than silently imposed.
 
 No salary HTTP endpoints, history retrieval helper, or frontend editor are part of Task 7A.
 The agreed `salary_unchanged` → HTTP 409 mapping belongs to Task 7B.
+
+## Salary HTTP APIs and history retrieval — Task 7B
+
+- Extend the existing app injection to four employee operations; server.ts wires real functions.
+  PATCH validates the JSON envelope/string amount then delegates to unchanged Task 7A persistence.
+  It changes only salary; extra fields cannot change currency or employee details. Preserve each
+  operation error's code/field: unchanged → 409, missing → 404, persistence failure → 500, amount
+  validation/storage errors → 400. Unsupported request currency is not a salary-update error,
+  because the operation uses stored currency. Existing parser/body-limit handling remains shared.
+- History retrieval first checks employee existence, then counts and selects only that employee's
+  history. Parameterized ID/LIMIT/OFFSET, existing pagination validation, and the migration 002
+  index keep this bounded. Missing employees differ from existing employees with empty history.
+  Three straightforward queries avoid a complex join or transaction; count/rows may differ during
+  concurrent writes, matching the existing directory trade-off.
+- Cast history IDs and NUMERIC amounts to text in SQL. Sort using the original numeric history ID
+  and full database timestamp, not formatted strings. Convert pg's Date to UTC ISO for JSON;
+  display precision is milliseconds, while PostgreSQL retains its finer timestamp precision.
+  `Omit<SalaryHistoryEntry, 'changedAt'> & { changedAt: Date }` describes the database row before
+  that conversion. Only counts/pagination metadata use JavaScript numbers.
+- Database-independent Supertest tests cover contracts/mappings and guard unwanted persistence
+  calls. Isolated PostgreSQL tests cover exact values, large IDs, timestamp ties, page boundaries,
+  employee isolation, and actual update-to-history/error behavior. No new dependencies or schemas.
