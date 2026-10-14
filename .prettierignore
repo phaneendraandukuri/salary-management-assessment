@@ -1,0 +1,14 @@
+**/node_modules/**
+**/dist/**
+**/coverage/**
+**/*.tsbuildinfo
+package-lock.json
+reference/**
+.git/**
+.codex/**
+.agents/**
+.vscode/**
+.env
+.env.*
+**/*.md
+**/*.sql

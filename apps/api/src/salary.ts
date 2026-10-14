@@ -4,16 +4,8 @@ export type SalaryValidationResult =
   | { ok: true; salary: { amount: string; currency: SalaryCurrency } }
   | { ok: false; error: 'invalid_amount' | 'unsupported_currency' };
 
-export function validateSalary(
-  amount: unknown,
-  currency: unknown,
-): SalaryValidationResult {
-  if (
-    currency !== 'INR' &&
-    currency !== 'USD' &&
-    currency !== 'EUR' &&
-    currency !== 'GBP'
-  ) {
+export function validateSalary(amount: unknown, currency: unknown): SalaryValidationResult {
+  if (currency !== 'INR' && currency !== 'USD' && currency !== 'EUR' && currency !== 'GBP') {
     return { ok: false, error: 'unsupported_currency' };
   }
 

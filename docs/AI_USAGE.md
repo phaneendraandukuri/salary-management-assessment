@@ -229,3 +229,21 @@ Final validation by Codex: `npm test` passed 172 API tests (545 ms) and 10 front
 (1.77 s). The explicit `acme_test` integration command passed 52 tests (1.80 s). Type checking,
 linting, both builds, and `git diff --check` exited 0. Vite transformed 17 modules.
 Candidate review of Task 5 remains pending; Codex has not staged, committed, pushed, or deployed it.
+
+## Formatting-only increment
+
+The candidate confirmed Task 5 review and commit, then approved a separate formatting increment
+before Task 6. Codex installed exact Prettier 3.9.10, added root format/check commands and a
+simple configuration, and mechanically formatted both workspaces. Markdown and SQL were excluded;
+only these concise command/evidence notes were manually added. The lockfile changed only for
+Prettier installation. No behavior, public interfaces, test assertions, or folder structure changed.
+
+Diff inspection and a comparison against Prettier-formatted HEAD confirmed all 11 changed
+application files match formatter output exactly. No artificial TDD cycle was claimed for tooling.
+`format:check` passed; unit tests passed 172 API tests (336 ms) and 10 frontend tests (1.06 s);
+the explicit isolated `acme_test` integration suite passed 52 tests (1.10 s). Type checks, lint,
+both builds, and `git diff --check` passed. The frontend build emitted the same asset filenames
+and sizes as Task 5. No new browser check was performed for this mechanical increment.
+
+Review remains pending. Codex has not staged, committed, pushed, or started Task 6. Integration
+cleanup hardening and safe server-side diagnostics remain follow-up considerations.

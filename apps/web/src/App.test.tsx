@@ -5,9 +5,14 @@ import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 
 const employee = {
-  employeeId: 'ACME-001', name: 'Alex Example', email: 'alex@example.test',
-  department: 'Engineering', role: 'Developer', country: 'India',
-  currency: 'INR', salaryAmount: '9007199254740993.01',
+  employeeId: 'ACME-001',
+  name: 'Alex Example',
+  email: 'alex@example.test',
+  department: 'Engineering',
+  role: 'Developer',
+  country: 'India',
+  currency: 'INR',
+  salaryAmount: '9007199254740993.01',
 };
 
 function jsonResponse(employees = [employee], total = employees.length, page = 1) {
@@ -31,7 +36,15 @@ describe('employee directory', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse()));
     render(<App />);
     expect(await screen.findByRole('table')).toBeInTheDocument();
-    for (const value of ['ACME-001', 'Alex Example', 'Engineering', 'Developer', 'India', 'INR', '9007199254740993.01']) {
+    for (const value of [
+      'ACME-001',
+      'Alex Example',
+      'Engineering',
+      'Developer',
+      'India',
+      'INR',
+      '9007199254740993.01',
+    ]) {
       expect(screen.getByRole('cell', { name: value })).toBeInTheDocument();
     }
     expect(screen.getByText('1 employee')).toBeInTheDocument();
@@ -49,16 +62,21 @@ describe('employee directory', () => {
   });
 
   it.each(['network', 'http', 'json'])(
-    'shows a friendly error and retries after a %s failure', async (failure) => {
+    'shows a friendly error and retries after a %s failure',
+    async (failure) => {
       const fetchMock = vi.fn();
-      if (failure === 'network') fetchMock.mockRejectedValueOnce(new Error('private network details'));
-      else if (failure === 'http') fetchMock.mockResolvedValueOnce(new Response('private SQL details', { status: 500 }));
+      if (failure === 'network')
+        fetchMock.mockRejectedValueOnce(new Error('private network details'));
+      else if (failure === 'http')
+        fetchMock.mockResolvedValueOnce(new Response('private SQL details', { status: 500 }));
       else fetchMock.mockResolvedValueOnce(new Response('{', { status: 200 }));
       fetchMock.mockResolvedValueOnce(jsonResponse());
       vi.stubGlobal('fetch', fetchMock);
       const user = userEvent.setup();
       render(<App />);
-      expect(await screen.findByRole('alert')).toHaveTextContent('Unable to load employees. Please try again.');
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Unable to load employees. Please try again.',
+      );
       expect(screen.queryByText(/private.*details/)).not.toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: 'Retry' }));
       expect(await screen.findByRole('table')).toBeInTheDocument();
@@ -69,9 +87,14 @@ describe('employee directory', () => {
 
   it('loads next/previous pages and disables controls during requests and at boundaries', async () => {
     let resolveSecond!: (response: Response) => void;
-    const fetchMock = vi.fn()
+    const fetchMock = vi
+      .fn()
       .mockResolvedValueOnce(jsonResponse([employee], 26))
-      .mockReturnValueOnce(new Promise<Response>((resolve) => { resolveSecond = resolve; }))
+      .mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          resolveSecond = resolve;
+        }),
+      )
       .mockResolvedValueOnce(jsonResponse([employee], 26));
     vi.stubGlobal('fetch', fetchMock);
     const user = userEvent.setup();
@@ -96,9 +119,13 @@ describe('employee directory', () => {
   });
 
   it('distinguishes an empty page from an empty directory and permits going back', async () => {
-    vi.stubGlobal('fetch', vi.fn()
-      .mockResolvedValueOnce(jsonResponse([employee], 26))
-      .mockResolvedValueOnce(jsonResponse([], 1, 2)));
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse([employee], 26))
+        .mockResolvedValueOnce(jsonResponse([], 1, 2)),
+    );
     const user = userEvent.setup();
     render(<App />);
     await screen.findByRole('table');
@@ -110,28 +137,50 @@ describe('employee directory', () => {
 
   it('ignores a late response from an aborted StrictMode request', async () => {
     let resolveOld!: (response: Response) => void;
-    const fetchMock = vi.fn()
-      .mockReturnValueOnce(new Promise<Response>((resolve) => { resolveOld = resolve; }))
+    const fetchMock = vi
+      .fn()
+      .mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          resolveOld = resolve;
+        }),
+      )
       .mockResolvedValueOnce(jsonResponse());
     vi.stubGlobal('fetch', fetchMock);
-    render(<StrictMode><App /></StrictMode>);
+    render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    );
     await screen.findByRole('cell', { name: 'Alex Example' });
     expect(fetchMock.mock.calls[0][1].signal.aborted).toBe(true);
-    await act(async () => { resolveOld(jsonResponse([{ ...employee, name: 'Stale Employee' }])); });
+    await act(async () => {
+      resolveOld(jsonResponse([{ ...employee, name: 'Stale Employee' }]));
+    });
     expect(screen.getByRole('cell', { name: 'Alex Example' })).toBeInTheDocument();
     expect(screen.queryByRole('cell', { name: 'Stale Employee' })).not.toBeInTheDocument();
   });
 
   it('ignores a late failure from an aborted StrictMode request', async () => {
     let rejectOld!: (error: Error) => void;
-    const fetchMock = vi.fn()
-      .mockReturnValueOnce(new Promise<Response>((_resolve, reject) => { rejectOld = reject; }))
+    const fetchMock = vi
+      .fn()
+      .mockReturnValueOnce(
+        new Promise<Response>((_resolve, reject) => {
+          rejectOld = reject;
+        }),
+      )
       .mockResolvedValueOnce(jsonResponse());
     vi.stubGlobal('fetch', fetchMock);
-    render(<StrictMode><App /></StrictMode>);
+    render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    );
     await screen.findByRole('table');
     expect(fetchMock.mock.calls[0][1].signal.aborted).toBe(true);
-    await act(async () => { rejectOld(new Error('Old request failed')); });
+    await act(async () => {
+      rejectOld(new Error('Old request failed'));
+    });
     expect(screen.getByRole('table')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });

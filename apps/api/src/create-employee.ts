@@ -24,15 +24,25 @@ export async function createEmployee(pool: Pool, input: unknown): Promise<Create
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING employee_id AS "employeeId", name, email, department, role, country,
          currency, salary_amount::text AS "salaryAmount"`,
-      [employee.employeeId, employee.name, employee.email, employee.department,
-        employee.role, employee.country, employee.currency, employee.salaryAmount],
+      [
+        employee.employeeId,
+        employee.name,
+        employee.email,
+        employee.department,
+        employee.role,
+        employee.country,
+        employee.currency,
+        employee.salaryAmount,
+      ],
     );
     return { ok: true, employee: result.rows[0] };
   } catch (error) {
     if (
       error instanceof Error &&
-      'code' in error && error.code === '23505' &&
-      'constraint' in error && error.constraint === 'employees_pkey'
+      'code' in error &&
+      error.code === '23505' &&
+      'constraint' in error &&
+      error.constraint === 'employees_pkey'
     ) {
       return { ok: false, error: { field: 'employeeId', code: 'duplicate_employee_id' } };
     }

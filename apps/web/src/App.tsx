@@ -4,9 +4,7 @@ import type { EmployeePage } from './employee-api';
 import './App.css';
 
 type DirectoryState =
-  | { status: 'loading' }
-  | { status: 'error' }
-  | { status: 'loaded'; data: EmployeePage };
+  { status: 'loading' } | { status: 'error' } | { status: 'loaded'; data: EmployeePage };
 
 export function App() {
   const [request, setRequest] = useState({ page: 1, attempt: 0 });
@@ -34,14 +32,24 @@ export function App() {
       <header className="page-header">
         <p className="eyebrow">ACME · Human Resources</p>
         <h1>ACME Salary Management</h1>
-        <p className="subtitle">Current annual base salaries, in each employee’s original currency.</p>
+        <p className="subtitle">
+          Current annual base salaries, in each employee’s original currency.
+        </p>
       </header>
       <section className="directory-card" aria-labelledby="directory-heading">
         <div className="directory-heading">
           <h2 id="directory-heading">Employee directory</h2>
-          {data && <p className="count">{data.total} {data.total === 1 ? 'employee' : 'employees'}</p>}
+          {data && (
+            <p className="count">
+              {data.total} {data.total === 1 ? 'employee' : 'employees'}
+            </p>
+          )}
         </div>
-        {state.status === 'loading' && <p className="notice" role="status">Loading employees…</p>}
+        {state.status === 'loading' && (
+          <p className="notice" role="status">
+            Loading employees…
+          </p>
+        )}
         {state.status === 'error' && (
           <div className="notice error">
             <p role="alert">Unable to load employees. Please try again.</p>
@@ -49,10 +57,17 @@ export function App() {
           </div>
         )}
         {data && data.employees.length === 0 && (
-          <p className="notice">{data.total === 0 ? 'No employees yet.' : 'No employees on this page.'}</p>
+          <p className="notice">
+            {data.total === 0 ? 'No employees yet.' : 'No employees on this page.'}
+          </p>
         )}
         {data && data.employees.length > 0 && (
-          <div className="table-scroll" role="region" aria-label="Employee salary records" tabIndex={0}>
+          <div
+            className="table-scroll"
+            role="region"
+            aria-label="Employee salary records"
+            tabIndex={0}
+          >
             <table>
               <caption>Current annual base salaries</caption>
               <thead>
@@ -83,11 +98,19 @@ export function App() {
           </div>
         )}
         <nav aria-label="Employee pagination">
-          <button disabled={state.status === 'loading' || request.page === 1}
-            onClick={() => loadPage(request.page - 1)}>Previous</button>
+          <button
+            disabled={state.status === 'loading' || request.page === 1}
+            onClick={() => loadPage(request.page - 1)}
+          >
+            Previous
+          </button>
           <span>Page {request.page}</span>
-          <button disabled={!data || request.page * data.pageSize >= data.total}
-            onClick={() => loadPage(request.page + 1)}>Next</button>
+          <button
+            disabled={!data || request.page * data.pageSize >= data.total}
+            onClick={() => loadPage(request.page + 1)}
+          >
+            Next
+          </button>
         </nav>
       </section>
     </main>

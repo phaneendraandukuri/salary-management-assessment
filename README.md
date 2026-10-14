@@ -41,10 +41,14 @@ npm run dev:web
 
 ```sh
 npm test
+npm run format:check
 npm run typecheck
 npm run lint
 npm run build
 ```
+
+Use `npm run format` to apply Prettier to application source, CSS, HTML, and configuration.
+Markdown, SQL migrations, dependencies, build outputs, and the lockfile are excluded.
 
 `npm test` runs database-independent API and frontend behavioral tests.
 `npm run test:watch` watches API tests;
