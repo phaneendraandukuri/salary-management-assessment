@@ -1,11 +1,18 @@
 # Render Free + Neon Free deployment runbook
 
-Selected approach: one Render Free Node web service serves Express and the React build;
-Neon Free stores PostgreSQL data. No cloud resources or deployment have been verified yet.
-Backend API protection, origin checks, throttling and expiry enforcement are implemented.
-React login integration is implemented; complete safe diagnostics before exposure. Actual Render proxy,
-TLS/cookie and Neon connectivity verification remain deployment prerequisites, not completed
-checks. Cloud verification is still pending.
+Deployed application: [ACME Salary Management](https://acme-salary-management-gzll.onrender.com/).
+One Render Free Node web service serves Express and the React build; Neon Free stores
+PostgreSQL data. The candidate confirmed successful deployment, live login and the seeded
+employee directory. HR demo credentials are provided privately in the submission email,
+not committed to the repository.
+
+Backend protection and React login are implemented. Detailed regression/security and UI test
+evidence was obtained locally; live login does not establish complete hosted proxy-header,
+cookie, expiry or failure-path verification. A read-only connection check from the local
+machine to the intended Neon database confirmed TLS 1.3, certificate authorization and
+hostname verification; it did not test Render-to-Neon connectivity independently. Hosted
+performance measurements are not recorded. The following commands remain a runbook for
+authorized setup/redeployment, not instructions to rerun against the seeded database.
 
 ## Preparation (local, no cloud action)
 
@@ -66,7 +73,7 @@ depending on those features. Test suites continue using isolated acme_test, neve
 
 ## Verification and ₹0 limitations
 
-After an explicitly authorized deployment, verify HTTPS /, JS/CSS assets, /health, and real
+For future authorized deployments, verify HTTPS /, JS/CSS assets, /health, and real
 directory/create/salary/history workflows with synthetic data. Unknown /api paths and missing
 assets must return 404. The same origin handles /api; no Vite preview/proxy or CORS setup is used.
 Verify login, refresh restoration, logout, expiry, logs without secrets, and a first request after idle.

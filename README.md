@@ -1,8 +1,16 @@
 # ACME Salary Management
 
+[Live application](https://acme-salary-management-gzll.onrender.com/) ·
+[Demo video](https://drive.google.com/file/d/1Y5p6oXEaPKvJWwoAWRJbR4hjZmVD9fsj/view?usp=sharing)
+
+Deployed on Render Free with Neon PostgreSQL. The candidate confirmed live login and the
+seeded employee directory. HR demo credentials are provided privately in the submission
+email and are not committed to the repository. Detailed automated and browser test evidence
+records local checks; it does not establish a complete hosted regression or performance test.
+
 Salary management for ACME's HR Manager. Product scope is in [REQUIREMENTS.md](REQUIREMENTS.md).
 The backend includes salary/employee validation, PostgreSQL employee creation, and paginated
-create/list HTTP APIs. The React directory displays real employees with loading, empty/error,
+create/list HTTP APIs. The React directory displays stored synthetic employees with loading, empty/error,
 retry, and pagination states. A separate form creates employees, confirms success, and refreshes
 the current directory page. Failed submissions retain entered values; uncertain network failures
 ask you to check the directory before resubmitting. Employee-ID ordering means a new record may
@@ -33,8 +41,8 @@ restores defaults. Once visited, insights stays mounted and refreshes even while
 Statistics display the API's exact strings and explain its currency separation/rounding.
 The backend requires HR authentication for employee, salary, history and insights APIs, with
 origin checks, bounded login attempts and session expiry. React checks the session before
-mounting protected workflows and supports login/logout. This navigation increment was verified
-locally with isolated synthetic data; it has not been deployed or verified against hosted data.
+mounting protected workflows and supports login/logout. Navigation, focus and stale-request
+regression checks were performed locally with isolated synthetic data; see docs/AI_USAGE.md.
 
 ## Local setup
 
@@ -113,7 +121,7 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the selected Render Free + Neon
 
 Tests and type checking are separate from compilation. API tests are excluded from the API build.
 Local 10,000-record query observations are in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
-Deployment and hosted performance remain unverified.
+These local timings are not hosted performance measurements.
 
 ## PostgreSQL setup and integration tests
 
@@ -245,7 +253,7 @@ exact configured Origin. A bare curl request to the directory now returns 401.
 On SIGINT/SIGTERM, the server stops
 accepting requests, waits for active requests, closes the session store, and closes the pool.
 
-## HR authentication (hosted verification pending)
+## HR authentication
 
 Choose one HR username and a strong unique demo password (at least 12 characters). Generate
 the hash interactively; password entry is hidden and the command refuses piped input:
@@ -288,7 +296,8 @@ Never reuse a real account's password. Remove temporary secret files when no lon
   Missing/null/mismatched origins return 403 `invalid_origin`; GET does not require Origin.
   HTTP APIs return 403 `https_required` in production. Proxy trust is one hop in production,
   disabled in development; cookies require Secure in production. These behaviors are tested
-  locally, but Render's real forwarding topology must be verified during deployment.
+  locally. Live login is candidate-confirmed; full hosted proxy-header/security regression
+  testing is not recorded here.
 - Login allows five attempts per IP and 60 globally per 15 minutes, counting successes/failures.
   Limits return 429 `login_rate_limited` with Retry-After. At most two password verifications
   run concurrently; saturation returns 503 `authentication_busy` with Retry-After: 1, without
@@ -311,4 +320,5 @@ login. Reauthentication starts with fresh forms, filters and panels. Interrupted
 creation or salary updates are never automatically replayed: check persisted records first.
 Session checks and login failures have separate feedback/retry; uncertain login offers a
 session check without retrying the login POST. Password inputs clear on submission.
-Safe diagnostics and actual deployment verification remain separate work.
+Request-failure diagnostics remain limited. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+for confirmed hosted facts, verification boundaries and free-tier limitations.
