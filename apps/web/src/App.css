@@ -216,6 +216,18 @@ button:disabled {
 .salary-edit-form [role='alert'] {
   color: #932d2d;
 }
+.creation-form > .creation-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  background: #f0fdf4;
+  color: #14532d;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
 .creation-form fieldset,
 .salary-edit-form fieldset {
   padding: 0;

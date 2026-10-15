@@ -76,7 +76,12 @@ export function EmployeeCreationForm({
       <h2 tabIndex={-1}>Add employee</h2>
       <p>All fields are required. Salary is annual base compensation.</p>
       {submitting && <p role="status">Creating employee…</p>}
-      {state.status === 'success' && <p role="status">Employee {state.employeeId} created.</p>}
+      {state.status === 'success' && (
+        <p role="status" className="creation-success">
+          <span aria-hidden="true">✓</span>
+          <span>Employee {state.employeeId} created.</span>
+        </p>
+      )}
       {error && (
         <p role="alert" id="employee-creation-error">
           {error.message}

@@ -88,6 +88,10 @@ it('confirms the stored employee ID, resets the form, and notifies the directory
   const user = await fillForm();
   await user.click(screen.getByRole('button', { name: 'Create employee' }));
   expect(await screen.findByRole('status')).toHaveTextContent('Employee STORED-ID created');
+  const confirmation = screen.getByRole('status');
+  expect(confirmation).toBeVisible();
+  expect(confirmation).toHaveClass('creation-success');
+  expect(confirmation.querySelector('[aria-hidden="true"]')).toHaveTextContent('✓');
   for (const control of screen.getAllByRole('textbox')) expect(control).toHaveValue('');
   expect(screen.getByRole('combobox')).toHaveValue('INR');
   expect(onCreated).toHaveBeenCalledTimes(1);

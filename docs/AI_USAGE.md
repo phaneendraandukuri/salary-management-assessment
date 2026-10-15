@@ -881,3 +881,23 @@ browser; a dedicated Chrome tab completed the checks. The temporary viewport was
 logout left zero sessions, the tab closed, and servers/pools/schema/credential metadata were
 cleaned up normally. No development or hosted database, Neon/Render access, staging, commit,
 push or deployment occurred. This increment has only local verification.
+
+## Employee-creation success styling
+
+Codex added only a scoped pale-green confirmation style and a decorative aria-hidden check
+mark, preserving role=status, message wording, confirmed-success timing, reset and error
+handling. The existing success/reset regression test first failed for the missing styling
+hook; after the markup/CSS change all 16 form tests passed. This is presentational regression
+evidence, not a new business-behavior TDD cycle. All 145 frontend tests passed (9.27 s), as did
+formatting, both workspace type checks, lint, both builds and git diff --check.
+
+The specified foreground/background pair has an 8.70:1 text contrast ratio. Desktop and
+320px-wide screenshots of the actual React form were inspected using a temporary local
+Vite preview with synthetic POST responses, no database. A 178-character ID wrapped without
+horizontal overflow; a long synthetic name was also submitted. The message remained above
+the reset form and continued to identify only the employee ID. The icon's aria-hidden
+attribute and status role were checked; no dedicated screen-reader software was used.
+The preview initially needed Vite's HTML transformation for its React preamble; this was fixed
+only in the temporary harness. The viewport was restored, preview tab/server closed and
+temporary harness removed. No backend, dependencies, hosted data, staging, commit, push,
+deployment or subsequent task was changed/performed. Candidate review remains pending.
