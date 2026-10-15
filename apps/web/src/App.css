@@ -353,9 +353,6 @@ button:disabled {
   }
 }
 
-.insights-toggle {
-  margin-bottom: 20px;
-}
 .insights-panel {
   padding: 24px;
   margin-bottom: 24px;
@@ -387,4 +384,21 @@ button:disabled {
 .insights-panel th,
 .insights-panel td {
   padding: 12px;
+}
+
+.directory [hidden] {
+  display: none !important;
+}
+.application-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  margin-bottom: 24px;
+}
+.application-nav button[aria-current='page'] {
+  background: #182a3d;
+  color: white;
 }

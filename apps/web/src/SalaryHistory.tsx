@@ -32,7 +32,7 @@ export function SalaryHistory({ employee, onClose }: { employee: Employee; onClo
 
   return (
     <section aria-label={`Salary history for ${employee.employeeId}`} className="history-panel">
-      <h2>
+      <h2 tabIndex={-1}>
         Salary history for {employee.name} ({employee.employeeId})
       </h2>
       <button onClick={onClose}>Close history</button>

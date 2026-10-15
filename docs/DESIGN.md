@@ -298,8 +298,8 @@ The agreed `salary_unchanged` → HTTP 409 mapping belongs to Task 7B.
 
 ## React compensation insights — Task 12B
 
-- One independent panel starts closed. Opening mounts fresh defaults; closing unmounts and
-  aborts requests. Draft country/department/grouping values stay separate from applied query
+- One independent panel loads on the first Insights visit. Task 12C keeps visited views mounted
+  while hidden, preserving criteria/results across navigation. Draft country/department/grouping values stay separate from applied query
   state. Apply/Reset/Retry use the existing local-state approach; no router, cache, or library.
 - A small GET helper checks requested grouping, supported currencies, group labels, exact
   two-place monetary strings, unique group keys, and safe/reconciled headcounts. It validates
@@ -308,13 +308,30 @@ The agreed `salary_unchanged` → HTTP 409 mapping belongs to Task 7B.
   request/version renders as loading immediately, including before a refresh effect executes.
   Cleanup aborts, and both success/failure handlers ignore aborted results, including StrictMode.
   The state union makes data available only after a matching successful request.
-- App increments a refresh version only through confirmed-write callbacks. An open panel
-  refetches its applied criteria; closed panels make no request. Directory, history, mutation
+- App increments a refresh version only through confirmed-write callbacks. A mounted panel
+  refetches its applied criteria, including while hidden; unvisited insights makes no request. Directory, history, mutation
   feedback, and insights state remain independent. No mutation retry or optimistic calculation.
 - Native selects expose the three grouping choices; their value assertion describes those
   known options, while API validation remains authoritative. A responsive form and scrollable
   table display currency/group values explicitly. Wide values stay exact rather than being
-  abbreviated or converted through Number. Broader navigation remains a separate increment.
+  abbreviated or converted through Number.
+
+## Lightweight navigation and history reveal — Task 12C
+
+- App uses one three-value view state and native buttons with aria-current. Hidden/inert
+  sections retain existing component state, exclude inactive controls from focus/accessibility,
+  and avoid lifting form drafts into a shared store. Nothing persists across reload/logout.
+  Once mounted, read requests continue while hidden; existing abort cleanup still applies to
+  superseding requests and authentication unmount. Pending writes disable navigation.
+- Navigation moves focus to the newly visible section's first heading. A ref records explicit
+  navigation intent so initial render and background updates do not move focus.
+- History reveal has a separate user-action counter from the existing refresh revision.
+  Initial, repeated and different-employee selections focus/scroll its heading after React
+  commits the DOM. Confirmed salary updates still remount matching history at page 1, without
+  scrolling or focusing it. Repeated View history preserves that employee's current page.
+- useLayoutEffect runs these small focus operations after DOM updates and before paint;
+  refs point to DOM containers without causing renders. tabIndex=-1 permits heading focus
+  without adding headings to ordinary Tab navigation. No router, URL state or framework.
 
 ## HR authentication foundation — Task 13A-1
 

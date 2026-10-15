@@ -19,15 +19,22 @@ summary identifies the displayed results. Apply and Reset return to page 1. Pagi
 creation, and salary-save refresh preserve applied criteria, ignoring unapplied edits.
 New employees may not match active filters. Salary sorting compares nominal amounts without
 conversion; use a currency filter for same-currency comparisons.
-Show compensation insights opens an independent panel with country/department filters and
+Employees / Add Employee / Insights buttons select one workflow at a time. Hidden sections
+retain drafts, directory criteria/page, salary selection, history page, and insights criteria.
+Navigation is temporarily disabled during creation or salary submission; Cancel/Close retain
+their existing meaning. Logout/session expiry clears all protected state. Navigation focuses
+the selected section's heading. View history scrolls/focuses the selected history immediately,
+including repeated selections; background refreshes do not move focus or scroll.
+Insights opens on first visit with country/department filters and
 currency/country/department grouping. Apply/Reset and the applied summary work separately from
 the directory. Confirmed creations/salary saves refresh open insights using applied criteria;
-errors do not undo write confirmations. Closing and reopening resets filters to defaults.
+errors do not undo write confirmations. Navigating away and back retains its state; Reset
+restores defaults. Once visited, insights stays mounted and refreshes even while hidden.
 Statistics display the API's exact strings and explain its currency separation/rounding.
 The backend requires HR authentication for employee, salary, history and insights APIs, with
-origin checks, bounded login attempts and session expiry. React login is the next separate
-increment; the existing UI cannot sign in yet. Deployment and Render's actual proxy topology
-remain unverified. Do not expose this intermediate application publicly.
+origin checks, bounded login attempts and session expiry. React checks the session before
+mounting protected workflows and supports login/logout. This navigation increment was verified
+locally with isolated synthetic data; it has not been deployed or verified against hosted data.
 
 ## Local setup
 

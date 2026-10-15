@@ -840,3 +840,44 @@ its CSS and verified the rendered layout in a second isolated browser harness, t
 the window and shut that harness down normally. Format check, both builds (including type
 checks) and diff check passed again after the CSS correction; behavioral tests were not
 repeated for that styling-only change.
+
+## Task 12C — Lightweight navigation and history discoverability
+
+Codex implemented the approved Employees / Add Employee / Insights views using native
+buttons and local React state. Mounted views retain drafts, directory criteria/page, salary
+selection, history page and insights state. Hidden/inert sections exclude inactive controls
+from display, keyboard focus and the accessibility tree. Auth unmount still clears all state.
+Navigation is disabled during writes; history user actions focus/scroll its heading without
+coupling that behavior to confirmed-write background refreshes. No backend/dependency/API
+changes or department-consistency work were performed. Candidate review is pending.
+
+Genuine Red evidence: the first two navigation tests failed because the creation form was
+initially visible and navigation buttons were absent. After implementation both passed.
+The next three tests failed because pending writes left navigation enabled and history did
+not receive focus. Minimal submission-state wiring and explicit history-reveal handling
+made all five pass. Three further cases (successful-write unlocks and history-page retention)
+passed as regression coverage, not additional Red evidence. Existing integration tests now
+navigate to their workflows; the obsolete insights close/reset test was updated to the
+approved retention policy while retaining obsolete-request cancellation coverage.
+
+Final validation: 429 backend unit tests passed (13.28 s), 158 isolated acme_test integration
+tests passed (19.92 s), and 145 frontend tests passed (final rerun 9.38 s; eight added).
+Type checks first caught an unsupported exact option in new Testing Library role queries;
+it was removed (string role names already match exactly). Final type checks, lint, Prettier,
+both builds and git diff --check passed. CSS cleanup removes the obsolete insights-toggle
+rule and prevents the new navigation bar inheriting pagination alignment/padding.
+
+Real-browser verification used a private local acme_test schema with 26 synthetic employees
+and temporary random credentials, actual Vite/Express and PostgreSQL sessions. Login, heading
+focus on navigation, Tab into only the active creation form, retained creation/salary drafts,
+directory page 2 and unapplied search draft, and retained insights draft/applied criteria
+were verified. Creation increased headcount to 27; salary updates preserved the exact large
+decimal string and refreshed history/insights. Selecting history from row 25, repeating it,
+and selecting another employee focused its heading at the viewport top. A confirmed salary
+refresh updated history without focusing/scrolling that heading. Hidden sections had inert
+attributes and zero layout height. At 390x844, navigation fit and document width stayed 390;
+desktop and narrow screenshots were inspected. Browser setup initially lacked the in-app
+browser; a dedicated Chrome tab completed the checks. The temporary viewport was reset,
+logout left zero sessions, the tab closed, and servers/pools/schema/credential metadata were
+cleaned up normally. No development or hosted database, Neon/Render access, staging, commit,
+push or deployment occurred. This increment has only local verification.

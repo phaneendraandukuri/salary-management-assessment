@@ -202,6 +202,7 @@ it.each([false, true])(
     await screen.findByRole('table');
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await screen.findByRole('table');
+    await user.click(screen.getByRole('button', { name: 'Add Employee' }));
     for (const [label, value] of [
       ['Employee ID', employee.employeeId],
       ['Name', employee.name],
@@ -213,7 +214,8 @@ it.each([false, true])(
     ])
       await user.type(screen.getByRole('textbox', { name: label }), value);
     await user.click(screen.getByRole('button', { name: 'Create employee' }));
-    expect(await screen.findByText('Employee ACME-001 created.')).toBeInTheDocument();
+    expect(await screen.findByText('Employee ACME-001 created.')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Employees' }));
     if (refreshFails) {
       expect(await screen.findByRole('alert')).toHaveTextContent('Unable to load employees');
       expect(screen.getByText('Employee ACME-001 created.')).toBeInTheDocument();

@@ -245,6 +245,7 @@ it.each(['create', 'salary'])(
     await user.clear(controls().getByRole('textbox', { name: 'Name or email' }));
     await user.type(controls().getByRole('textbox', { name: 'Name or email' }), 'unapplied');
     if (operation === 'create') {
+      await user.click(screen.getByRole('button', { name: 'Add Employee' }));
       const form = within(screen.getByRole('form', { name: 'Create employee' }));
       for (const [label, value] of [
         ['Employee ID', employee.employeeId],
@@ -258,6 +259,7 @@ it.each(['create', 'salary'])(
         await user.type(form.getByRole('textbox', { name: label }), value);
       await user.click(form.getByRole('button', { name: 'Create employee' }));
       await screen.findByText('Employee A created.');
+      await user.click(screen.getByRole('button', { name: 'Employees' }));
     } else {
       await user.click(screen.getByRole('button', { name: 'Edit salary for A' }));
       await user.click(screen.getByRole('button', { name: 'Save salary' }));

@@ -38,7 +38,7 @@ function insights(mode = 'currency', amount = '100.00') {
 function panel() {
   return within(screen.getByRole('region', { name: 'Compensation insights' }));
 }
-it('starts closed, aborts on close, and reopens with defaults without old responses', async () => {
+it('loads on first visit, retains criteria on return and still cancels obsolete requests', async () => {
   let resolve!: (response: Response) => void;
   let calls = 0;
   const fetchMock = vi.fn().mockImplementation((url: string) => {
@@ -56,19 +56,22 @@ it('starts closed, aborts on close, and reopens with defaults without old respon
   await screen.findByRole('table');
   expect(screen.queryByRole('region', { name: 'Compensation insights' })).not.toBeInTheDocument();
   expect(calls).toBe(0);
-  await user.click(screen.getByRole('button', { name: 'Show compensation insights' }));
+  await user.click(screen.getByRole('button', { name: 'Insights' }));
   await panel().findByRole('table');
   await user.type(panel().getByRole('textbox', { name: 'Insights country' }), 'India');
   await user.selectOptions(panel().getByRole('combobox', { name: 'Insights grouping' }), 'country');
   await user.click(panel().getByRole('button', { name: 'Apply insights' }));
-  await user.click(screen.getByRole('button', { name: 'Hide compensation insights' }));
+  await user.click(screen.getByRole('button', { name: 'Employees' }));
   expect(screen.queryByRole('region', { name: 'Compensation insights' })).not.toBeInTheDocument();
   const old = fetchMock.mock.calls.find((call) => call[0].includes('groupBy=country'));
-  expect(old?.[1].signal.aborted).toBe(true);
-  await user.click(screen.getByRole('button', { name: 'Show compensation insights' }));
+  expect(old?.[1].signal.aborted).toBe(false);
+  await user.click(screen.getByRole('button', { name: 'Insights' }));
+  expect(panel().getByRole('textbox', { name: 'Insights country' })).toHaveValue('India');
+  expect(panel().getByRole('combobox', { name: 'Insights grouping' })).toHaveValue('country');
+  expect(screen.getByRole('heading', { name: 'Compensation insights' })).toHaveFocus();
+  await user.click(panel().getByRole('button', { name: 'Reset insights' }));
   await panel().findByRole('table');
-  expect(panel().getByRole('textbox', { name: 'Insights country' })).toHaveValue('');
-  expect(panel().getByRole('combobox', { name: 'Insights grouping' })).toHaveValue('currency');
+  expect(old?.[1].signal.aborted).toBe(true);
   await act(async () => {
     resolve(insights('country', '999.00'));
   });
@@ -77,6 +80,7 @@ it('starts closed, aborts on close, and reopens with defaults without old respon
 
 async function submit(user: ReturnType<typeof userEvent.setup>, operation: string) {
   if (operation === 'create') {
+    await user.click(screen.getByRole('button', { name: 'Add Employee' }));
     const form = within(screen.getByRole('form', { name: 'Create employee' }));
     for (const [label, value] of [
       ['Employee ID', employee.employeeId],
@@ -90,6 +94,7 @@ async function submit(user: ReturnType<typeof userEvent.setup>, operation: strin
       await user.type(form.getByRole('textbox', { name: label }), value);
     await user.click(form.getByRole('button', { name: 'Create employee' }));
   } else {
+    await user.click(screen.getByRole('button', { name: 'Employees' }));
     await user.click(screen.getByRole('button', { name: 'Edit salary for A' }));
     await user.click(screen.getByRole('button', { name: 'Save salary' }));
   }
@@ -124,7 +129,7 @@ it.each([
     render(<App />);
     const user = userEvent.setup();
     await screen.findByRole('table');
-    await user.click(screen.getByRole('button', { name: 'Show compensation insights' }));
+    await user.click(screen.getByRole('button', { name: 'Insights' }));
     await panel().findByRole('table');
     await user.type(panel().getByRole('textbox', { name: 'Insights country' }), 'India');
     await user.selectOptions(
@@ -143,6 +148,7 @@ it.each([
     const confirmation =
       operation === 'create' ? 'Employee A created.' : 'Salary updated for A: USD 200.00.';
     await screen.findByText(confirmation);
+    await user.click(screen.getByRole('button', { name: 'Insights' }));
     if (fails) {
       expect(await panel().findByRole('alert')).toHaveTextContent(
         'Unable to load compensation insights',
@@ -157,6 +163,7 @@ it.each([
       groupBy: 'country',
       country: 'India',
     });
+    await user.click(screen.getByRole('button', { name: 'Employees' }));
     expect(
       within(screen.getByRole('region', { name: 'Employee directory' })).queryByRole('alert'),
     ).not.toBeInTheDocument();
@@ -195,10 +202,11 @@ it.each([
   render(<App />);
   const user = userEvent.setup();
   await screen.findByRole('table');
-  await user.click(screen.getByRole('button', { name: 'Show compensation insights' }));
+  await user.click(screen.getByRole('button', { name: 'Insights' }));
   await panel().findByRole('table');
   await submit(user, operation);
   await screen.findByRole('alert');
+  await user.click(screen.getByRole('button', { name: 'Insights' }));
   expect(
     fetchMock.mock.calls.filter((call) => call[0].startsWith('/api/compensation-insights')),
   ).toHaveLength(1);

@@ -29,7 +29,13 @@ type FormState =
   | { status: 'success'; employeeId: string }
   | { status: 'error'; message: string; field?: string };
 
-export function EmployeeCreationForm({ onCreated }: { onCreated: () => void }) {
+export function EmployeeCreationForm({
+  onCreated,
+  onSubmittingChange,
+}: {
+  onCreated: () => void;
+  onSubmittingChange?: (submitting: boolean) => void;
+}) {
   const apiRequest = useApiRequest();
   const [state, setState] = useState<FormState>({ status: 'idle' });
   const submitting = state.status === 'submitting';
@@ -42,7 +48,9 @@ export function EmployeeCreationForm({ onCreated }: { onCreated: () => void }) {
     // This fixed form contains only the eight named string-valued employee controls.
     const employee = Object.fromEntries(new FormData(form)) as Employee;
     setState({ status: 'submitting' });
+    onSubmittingChange?.(true);
     const result = await postEmployee(employee, apiRequest);
+    onSubmittingChange?.(false);
     if (!result.ok) {
       const field = textFields.find((field) => field.name === result.error.field);
       const message =
@@ -65,7 +73,7 @@ export function EmployeeCreationForm({ onCreated }: { onCreated: () => void }) {
 
   return (
     <form onSubmit={submit} aria-label="Create employee" className="creation-form">
-      <h2>Add employee</h2>
+      <h2 tabIndex={-1}>Add employee</h2>
       <p>All fields are required. Salary is annual base compensation.</p>
       {submitting && <p role="status">Creating employee…</p>}
       {state.status === 'success' && <p role="status">Employee {state.employeeId} created.</p>}

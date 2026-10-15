@@ -47,7 +47,7 @@ export function CompensationInsights({ refreshVersion = 0 }: { refreshVersion?: 
       id="compensation-insights"
       className="insights-panel"
     >
-      <h2>Compensation insights</h2>
+      <h2 tabIndex={-1}>Compensation insights</h2>
       <p>
         Current annual base salaries, separated by currency. Average and median are rounded to two
         decimals; positive half-cent ties round up.
