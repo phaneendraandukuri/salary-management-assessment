@@ -44,6 +44,8 @@ export function App() {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [savingSalary, setSavingSalary] = useState(false);
   const [creatingEmployee, setCreatingEmployee] = useState(false);
+  const [salaryReveal, setSalaryReveal] = useState(0);
+  const salaryPanel = useRef<HTMLDivElement>(null);
   const [historyReveal, setHistoryReveal] = useState(0);
   const historyPanel = useRef<HTMLDivElement>(null);
   const [historySelection, setHistorySelection] = useState<{
@@ -81,6 +83,13 @@ export function App() {
     heading?.focus({ preventScroll: true });
     heading?.scrollIntoView?.({ block: 'start' });
   }, [historyReveal]);
+
+  useLayoutEffect(() => {
+    if (!salaryReveal) return;
+    const heading = salaryPanel.current?.querySelector<HTMLElement>('h2');
+    heading?.focus({ preventScroll: true });
+    heading?.scrollIntoView?.({ block: 'start' });
+  }, [salaryReveal]);
 
   function loadPage(page: number) {
     setState({ status: 'loading' });
@@ -169,15 +178,17 @@ export function App() {
         hidden={activeView !== 'employees'}
         inert={activeView !== 'employees'}
       >
-        {editingEmployee && (
-          <SalaryEditForm
-            key={editingEmployee.employeeId}
-            employee={editingEmployee}
-            onSaved={() => salarySaved(editingEmployee.employeeId)}
-            onCancel={() => setEditingEmployee(null)}
-            onSavingChange={setSavingSalary}
-          />
-        )}
+        <div ref={salaryPanel}>
+          {editingEmployee && (
+            <SalaryEditForm
+              key={editingEmployee.employeeId}
+              employee={editingEmployee}
+              onSaved={() => salarySaved(editingEmployee.employeeId)}
+              onCancel={() => setEditingEmployee(null)}
+              onSavingChange={setSavingSalary}
+            />
+          )}
+        </div>
         <div ref={historyPanel}>
           {historySelection && (
             <SalaryHistory
@@ -360,7 +371,12 @@ export function App() {
                           <button
                             disabled={savingSalary}
                             aria-label={`Edit salary for ${employee.employeeId}`}
-                            onClick={() => setEditingEmployee(employee)}
+                            onClick={() => {
+                              setEditingEmployee((current) =>
+                                current?.employeeId === employee.employeeId ? current : employee,
+                              );
+                              setSalaryReveal((current) => current + 1);
+                            }}
                           >
                             Edit salary
                           </button>

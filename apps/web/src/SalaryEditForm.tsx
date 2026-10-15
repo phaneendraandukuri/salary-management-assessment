@@ -56,7 +56,7 @@ export function SalaryEditForm({ employee, onCancel, onSaved, onSavingChange }: 
 
   return (
     <form aria-label="Edit salary" onSubmit={submit} className="salary-edit-form">
-      <h2>
+      <h2 tabIndex={-1}>
         Edit salary for {employee.name} ({employee.employeeId})
       </h2>
       <p>Currency: {employee.currency}</p>

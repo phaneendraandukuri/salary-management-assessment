@@ -901,3 +901,30 @@ The preview initially needed Vite's HTML transformation for its React preamble; 
 only in the temporary harness. The viewport was restored, preview tab/server closed and
 temporary harness removed. No backend, dependencies, hosted data, staging, commit, push,
 deployment or subsequent task was changed/performed. Candidate review remains pending.
+
+## Edit Salary visibility correction
+
+Codex mirrored the existing history-reveal counter/ref/layout-effect pattern for salary
+editing, without introducing an abstraction. Explicit Edit Salary clicks focus/scroll the
+existing employee-name/ID heading; repeated same-employee clicks preserve the draft, while
+the existing keyed reset still applies to a different employee. Background directory/save/
+history updates do not increment the reveal counter. No API, CSS, dependency or backend changed.
+
+Two new tests failed before implementation: the salary heading did not receive focus, and
+only history clicks scrolled. After minimal implementation all ten navigation tests passed.
+The existing history regression now resets its scroll spy after the intentional Edit Salary
+reveal, then verifies saving causes no additional reveal. Final frontend tests passed 147
+(9.66 s); Prettier, both workspace type checks, lint, both builds and git diff --check passed.
+No further abstraction/refactor was warranted; formatting was limited to the affected files.
+
+Real Chrome verification used actual Vite/Express/authentication and PostgreSQL in a private
+local acme_test schema with 26 synthetic employees. Desktop row-25 selection and repeated
+selection focused the editor at the viewport top; the repeated click retained 123.45.
+At 390x844, selecting another employee showed exact salary 9007199254740993.01, with no
+page-width overflow. Tab entered the amount input. Directory Apply retained its focus;
+a confirmed salary update to 9007199254740994.01 refreshed matching history without revealing
+the editor/history again. Cancel/reopen restored the saved amount, not the discarded draft.
+The viewport was reset, logout left zero stored sessions, the tab closed and temporary
+servers/pools/schema/credential metadata/harness were cleaned up. No development/hosted
+database, Neon/Render access, staging, commit, push, deployment or next task was performed.
+Candidate review remains pending.

@@ -130,6 +130,62 @@ it('retains the selected history page when navigating away and back without anot
 afterEach(() => {
   delete (HTMLElement.prototype as unknown as { scrollIntoView?: unknown }).scrollIntoView;
 });
+it('reveals salary editing on initial/repeated/different selections while preserving the same employee draft', async () => {
+  const scroll = vi.fn();
+  Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+    value: scroll,
+    configurable: true,
+  });
+  const { user } = setup();
+  await screen.findByRole('table');
+  await user.click(screen.getByRole('button', { name: 'Edit salary for E1' }));
+  expect(
+    screen.getByRole('heading', { name: 'Edit salary for Synthetic Person (E1)' }),
+  ).toHaveFocus();
+  expect(scroll).toHaveBeenCalledTimes(1);
+  const amount = screen.getByLabelText('New annual salary');
+  await user.clear(amount);
+  await user.type(amount, '123.45');
+  await user.click(screen.getByRole('button', { name: 'Edit salary for E1' }));
+  expect(screen.getByLabelText('New annual salary')).toHaveValue('123.45');
+  expect(
+    screen.getByRole('heading', { name: 'Edit salary for Synthetic Person (E1)' }),
+  ).toHaveFocus();
+  expect(scroll).toHaveBeenCalledTimes(2);
+  await user.click(screen.getByRole('button', { name: 'Edit salary for E2' }));
+  expect(
+    screen.getByRole('heading', { name: 'Edit salary for Synthetic Person (E2)' }),
+  ).toHaveFocus();
+  expect(screen.getByLabelText('New annual salary')).toHaveValue(employee.salaryAmount);
+  expect(scroll).toHaveBeenCalledTimes(3);
+});
+
+it('does not reveal the salary editor during directory, save or history refreshes', async () => {
+  const scroll = vi.fn();
+  Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+    value: scroll,
+    configurable: true,
+  });
+  const { user, fetchMock } = setup();
+  await screen.findByRole('table');
+  await user.click(screen.getByRole('button', { name: 'View history for E1' }));
+  await user.click(screen.getByRole('button', { name: 'Edit salary for E1' }));
+  const amount = screen.getByLabelText('New annual salary');
+  await user.clear(amount);
+  await user.type(amount, '123.45');
+  await user.click(screen.getByRole('button', { name: 'Apply' }));
+  await screen.findByRole('table');
+  expect(screen.getByRole('button', { name: 'Apply' })).toHaveFocus();
+  expect(scroll).toHaveBeenCalledTimes(2);
+  fetchMock.mockResolvedValueOnce(
+    new Response(JSON.stringify({ employee: { ...employee, salaryAmount: '123.45' } })),
+  );
+  await user.click(screen.getByRole('button', { name: 'Save salary' }));
+  await screen.findByText('Salary updated for E1: INR 123.45.');
+  expect(scroll).toHaveBeenCalledTimes(2);
+  expect(screen.getByRole('button', { name: 'Save salary' })).toHaveFocus();
+  expect(fetchMock.mock.calls.filter((call) => call[0].includes('salary-history'))).toHaveLength(2);
+});
 it('reveals history for initial, repeated and different selections, but never on background refresh', async () => {
   const scroll = vi.fn();
   Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
@@ -146,6 +202,7 @@ it('reveals history for initial, repeated and different selections, but never on
     expect(scroll).toHaveBeenCalledTimes(index + 1);
   }
   await user.click(screen.getByRole('button', { name: 'Edit salary for E2' }));
+  scroll.mockClear();
   fetchMock.mockResolvedValueOnce(
     new Response(
       JSON.stringify({ employee: { ...employee, employeeId: 'E2', salaryAmount: '100.01' } }),
@@ -153,7 +210,7 @@ it('reveals history for initial, repeated and different selections, but never on
   );
   await user.click(screen.getByRole('button', { name: 'Save salary' }));
   await screen.findByText('Salary updated for E2: INR 100.01.');
-  expect(scroll).toHaveBeenCalledTimes(3);
+  expect(scroll).not.toHaveBeenCalled();
   expect(screen.getByRole('button', { name: 'Save salary' })).toHaveFocus();
 });
 it('retains creation drafts, directory drafts and the selected salary across navigation', async () => {
